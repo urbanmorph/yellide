@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+.output/
+.vercel/
+.wrangler/
+.svelte-kit/
+
+# OS / editor
+.DS_Store
+*.log
+
+# Tangential exploration / research / scratch — never committed (repo discipline)
+supporting-docs/
