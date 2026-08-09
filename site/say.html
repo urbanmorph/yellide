@@ -33,105 +33,71 @@
 
 <main>
 <h1>What to say</h1>
-<p class="sub">Yellide has no buttons. It lives inside Claude, so everything happens by asking.
-These are the things worth asking — in the words you would actually use.</p>
+<p class="sub">Yellide has no buttons. It lives inside Claude, so everything happens by asking. On the left is what you say; on the right is what happens.</p>
+
+<h2>Starting off</h2>
+<div class="log said">
+<div class="row"><div class="k">&ldquo;What media files do I have on this Mac?&rdquo;</div><div class="v">It finds them itself and starts indexing. Say <em>media files on this Mac</em> rather than <em>my archive</em> &mdash; archive can be read as your past conversations.</div></div>
+<div class="row"><div class="k">&ldquo;Keep going until the index is finished.&rdquo;</div><div class="v">The scan runs in the background; search works on whatever is already in.</div></div>
+<div class="row"><div class="k">&ldquo;How far along is the scan?&rdquo;</div><div class="v">Counts, and what is left.</div></div>
+</div>
+
+<h2>Finding something</h2>
+<div class="log said">
+<div class="row"><div class="k">&ldquo;Find the cycling event.&rdquo;</div><div class="v">Searches captions and tags as well as names, folders, dates, camera and place.</div></div>
+<div class="row"><div class="k">&ldquo;What did I shoot in March 2020?&rdquo;</div><div class="v">Dates come straight out of the files.</div></div>
+<div class="row"><div class="k">&ldquo;Show me everything from the D610.&rdquo;</div><div class="v">Camera and lens are indexed too.</div></div>
+<div class="row"><div class="k">&ldquo;Anything with bunting in it?&rdquo;</div><div class="v">Works once the pictures have been described &mdash; see below.</div></div>
+<div class="row"><div class="k">&ldquo;Drone shots from Kerala.&rdquo;</div><div class="v">Place comes from GPS where the camera recorded it.</div></div>
+</div>
+
+<h2>Seeing the pictures</h2>
+<div class="log said">
+<div class="row"><div class="k">&ldquo;Show me those.&rdquo;</div><div class="v">A contact sheet opens in your browser with the actual frames, captioned. Click any one to reveal it in Finder.</div></div>
+<div class="row"><div class="k">&ldquo;Let me see the cycling ones.&rdquo;</div><div class="v">Same. When Claude says it is <em>looking</em>, it can see them and you cannot &mdash; ask to <b class="k">see</b> them and you get the sheet.</div></div>
+</div>
+
+<h2>Getting to the file</h2>
+<div class="log said">
+<div class="row"><div class="k">&ldquo;Open that one.&rdquo;</div><div class="v">Opens it in Finder.</div></div>
+<div class="row"><div class="k">&ldquo;Copy the path.&rdquo;</div><div class="v">Gives you the path to paste.</div></div>
+</div>
+
+<h2>Making it searchable by what is in it</h2>
+<div class="log said">
+<div class="row"><div class="k">&ldquo;Look at my photos and describe what is in them.&rdquo;</div><div class="v">Claude looks and writes down what it sees. One description covers a whole shoot, so a few minutes can cover hundreds of files.</div></div>
+<div class="row"><div class="k">&ldquo;Keep describing until it is done.&rdquo;</div><div class="v">It is a loop and it will stop early unless told to continue.</div></div>
+<div class="row"><div class="k">&ldquo;How much of my archive has been described?&rdquo;</div><div class="v">A percentage, and what a few more minutes would add.</div></div>
+</div>
+
+<h2>Keeping things out of the index</h2>
+<div class="log said">
+<div class="row"><div class="k">&ldquo;That one is an ID card &mdash; mark it private.&rdquo;</div><div class="v">Recorded by type only, never by contents, and redacted on export. Marking one copy marks every identical copy.</div></div>
+</div>
+
+<h2>Drives that are not plugged in</h2>
+<div class="log said">
+<div class="row"><div class="k">&ldquo;Where is that file?&rdquo;</div><div class="v">Names the drive and says plainly that it is not connected.</div></div>
+<div class="row"><div class="k">&ldquo;Which drives do you know about?&rdquo;</div><div class="v">Everything it has ever indexed, and when it last saw each one.</div></div>
+</div>
+
+<h2>Getting your index out</h2>
+<div class="log said">
+<div class="row"><div class="k">&ldquo;Export my index.&rdquo;</div><div class="v">Plain JSON that needs no software to read.</div></div>
+</div>
+
+<h2>When something is wrong</h2>
+<div class="log said">
+<div class="row"><div class="k">&ldquo;Run Yellide diagnostics and show me the report.&rdquo;</div><div class="v">No filenames, paths, descriptions or search terms in it &mdash; safe to paste to whoever is helping you.</div></div>
+</div>
 
 <h2>Shortcuts, if your app offers them</h2>
 <p>Yellide registers five ready-made requests &mdash; <code>find</code>, <code>index</code>,
-<code>describe</code>, <code>archive</code> and <code>diagnose</code>. Where they appear
-depends on the app: look in the <b class="k">+</b> menu beside the message box. In Claude
-Desktop the <b class="k">/</b> menu is for Skills, not for these.</p>
-<p class="note">If you cannot find them, ignore this section entirely. Typing the requests
-below works just as well and reads more naturally &mdash; the shortcuts save keystrokes,
-nothing more.</p>
-
-<h2>Starting off</h2>
-<div class="say">
-<p>&ldquo;What media files do I have on this Mac?&rdquo;</p>
-<p>&ldquo;Keep going until the index is finished.&rdquo;</p>
-<p>&ldquo;How far along is the scan?&rdquo;</p>
-</div>
-<p class="note">Say <em>media files on this Mac</em> rather than <em>my archive</em>. The word
-archive can be read as your past conversations, and then it answers from memory instead of looking.</p>
-
-<h2>Finding something</h2>
-<div class="say">
-<p>&ldquo;Find the cycling event.&rdquo;</p>
-<p>&ldquo;What did I shoot in March 2020?&rdquo;</p>
-<p>&ldquo;Show me everything from the D610.&rdquo;</p>
-<p>&ldquo;Anything with bunting in it?&rdquo;</p>
-<p>&ldquo;Drone shots from Kerala.&rdquo;</p>
-</div>
-<p>Filenames, folders, dates, camera, lens and place all work from the moment the scan finishes.
-Searching by <em>what is in the picture</em> works once things have been described — see below.</p>
-
-<h2>Seeing the pictures</h2>
-<div class="say">
-<p>&ldquo;Show me those.&rdquo;</p>
-<p>&ldquo;Let me see the cycling ones.&rdquo;</p>
-</div>
-<p>A contact sheet opens in your browser with the actual frames, captioned, and clicking any
-one of them reveals it in Finder.</p>
-<p class="note">Worth knowing: when Claude says it is <em>looking</em> at your pictures, it can
-see them but you cannot &mdash; they go to the AI, not to your screen. Ask to <b class="k">see</b>
-them and you get the contact sheet.</p>
-
-<h2>Getting to the file</h2>
-<div class="say">
-<p>&ldquo;Open that one.&rdquo;</p>
-<p>&ldquo;Copy the path.&rdquo;</p>
-<p>&ldquo;Show it in Finder.&rdquo;</p>
-</div>
-
-<figure class="shot">
-  <img src="/img/search.jpg" width="1200" height="1301" loading="lazy"
-       alt="A chat answer listing cycling photographs found across six places on one Mac,
-            each with its camera model and capture date, going back to 2006.">
-  <figcaption>One question, twenty years of archive: six places, four camera bodies, and it
-  separated the photographs from the posters.</figcaption>
-</figure>
-
-<h2>Making it searchable by what is in it</h2>
-<p>This is the part that no filename can do for you. Claude looks at the pictures and writes down
-what it sees, and one description covers a whole shoot — so a few minutes of looking can cover
-hundreds of files.</p>
-<div class="say">
-<p>&ldquo;Look at my photos and describe what is in them.&rdquo;</p>
-<p>&ldquo;Keep describing until it is done.&rdquo;</p>
-<p>&ldquo;How much of my archive has been described so far?&rdquo;</p>
-<p>&ldquo;What still needs describing?&rdquo;</p>
-</div>
-<p class="note">If it describes a few and then stops, say <em>keep going until it is done</em>.
-It is a loop, and it will run for as long as you let it.</p>
-
-<h2>Keeping things out of the index</h2>
-<div class="say">
-<p>&ldquo;That one is an ID card — mark it private.&rdquo;</p>
-<p>&ldquo;Mark the medical reports private.&rdquo;</p>
-</div>
-<p>A private item is recorded by type only, never by its contents, and it is reduced to a bare
-label if you ever export. Marking one copy marks every copy of the same file, wherever it sits.</p>
-
-<h2>Drives that are not plugged in</h2>
-<div class="say">
-<p>&ldquo;Where is that file?&rdquo;</p>
-<p>&ldquo;Which drives do you know about?&rdquo;</p>
-</div>
-<p>Yellide keeps knowing what was on a drive after you unplug it. It will tell you the drive by
-name and say plainly that it is not connected. That is the whole point of it.</p>
-
-<h2>Getting your index out</h2>
-<div class="say">
-<p>&ldquo;Export my index.&rdquo;</p>
-</div>
-<p>Plain JSON that needs no software to read, so nothing here is a one-way door.</p>
-
-<h2>When something is wrong</h2>
-<div class="say">
-<p>&ldquo;Run Yellide diagnostics and show me the report.&rdquo;</p>
-</div>
-<p>The report has no filenames, paths, descriptions or search terms in it — only counts and
-capabilities — so it is safe to paste to whoever is helping you.</p>
+<code>describe</code>, <code>archive</code> and <code>diagnose</code>. Where they appear depends
+on the app; look in the <b class="k">+</b> menu beside the message box. In Claude Desktop the
+<b class="k">/</b> menu is for Skills, not for these.</p>
+<p class="note">If you cannot find them, ignore this. Typing the requests above works just as
+well and reads more naturally.</p>
 
 <h2>One thing not to do</h2>
 <div class="warn">
