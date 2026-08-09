@@ -50,6 +50,7 @@ stale = [f.name for f in pathlib.Path('site').glob('*.html')
 if stale:
     print('  WARNING: a version number that is not %s survives in: %s' % (version, stale))
 PY
-echo "  site/yellide.mcpb updated — remember to add a changelog entry"
+python3 scripts/build-changelog.py
+echo "  site/yellide.mcpb updated"
 echo
 echo "install: drag onto Claude Desktop, or Settings → Extensions → Advanced → Install Extension"

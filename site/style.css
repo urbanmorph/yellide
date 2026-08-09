@@ -19,12 +19,19 @@ body{margin:0; background:var(--bg); color:var(--fg);
 .wrap{max-width:44rem; margin:0 auto; padding:3.5rem 1.25rem 5rem}
 .vh{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
 
-/* wordmark ------------------------------------------------------------- */
+/* masthead ------------------------------------------------------------- */
 .wm{display:block; height:1.7rem; width:auto}
-.lock{margin:0 0 2.6rem}
-.lock .wm{height:4.6rem}
-@media (max-width:34rem){.lock .wm{height:3.4rem}}
-a.home{display:inline-block; margin:0 0 2.5rem}
+header.top{margin:0 0 3rem}
+a.home{display:inline-block}
+header.top.lock .wm{height:4.6rem}
+@media (max-width:34rem){header.top.lock .wm{height:3.4rem}}
+nav.top{margin:1rem 0 0; padding-top:.85rem; border-top:1px solid var(--rule);
+        font:.95rem ui-sans-serif,system-ui,sans-serif;
+        display:flex; flex-wrap:wrap; gap:.35rem 1.35rem}
+nav.top a{color:var(--dim); text-decoration:none; white-space:nowrap;
+          border-bottom:2px solid transparent; padding-bottom:2px}
+nav.top a:hover{color:var(--fg)}
+nav.top a[aria-current]{color:var(--fg); border-bottom-color:var(--accent)}
 
 /* type ----------------------------------------------------------------- */
 h1{font-size:2.1rem; line-height:1.15; margin:0 0 .4rem; letter-spacing:-.02em; font-weight:400}
@@ -54,9 +61,37 @@ pre{background:var(--rule); padding:.9rem 1rem; border-radius:6px; overflow-x:au
     font:.85rem/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
 pre code{background:none; padding:0}
 
-/* footer nav ----------------------------------------------------------- */
+/* colophon ------------------------------------------------------------- */
 .foot{color:var(--dim); font-size:.9rem; margin-top:0}
-nav.foot{margin:.8rem 0 0}
-nav.foot a{margin-right:.9rem; white-space:nowrap}
-nav.foot a[aria-current]{text-decoration-color:var(--accent); color:var(--fg)}
 .ver{font-family:ui-sans-serif,system-ui,sans-serif; font-size:.85rem}
+
+/* mobile --------------------------------------------------------------- */
+@media (max-width:34rem){
+  .wrap{padding:2.5rem 1.05rem 4rem}
+  h1{font-size:1.8rem}
+  h2{margin-top:2.4rem}
+  h3{margin-top:1.6rem}
+  .sub{margin-bottom:2rem}
+  header.top{margin-bottom:2.2rem}
+  nav.top{gap:.4rem 1rem}
+
+  /* the step indent was eating a third of a 360px column */
+  ol>li{padding-left:2.1rem; margin-bottom:1.7rem}
+  ol>li::before{width:1.45rem; height:1.45rem; font-size:.72rem}
+  /* let full-width blocks escape the indent and use the whole column */
+  ol>li figure,ol>li .warn,ol>li pre{margin-left:-2.1rem}
+
+  pre{font-size:.78rem; padding:.75rem .8rem}
+  .repro{padding:.85rem}
+  .repro-row{gap:.55rem}
+  .repro p{font-size:.9rem}
+  .repro-btns{flex-wrap:wrap}
+  .say{padding:.8rem 1rem}
+  blockquote,.note{padding-left:.85rem}
+}
+@media (max-width:24rem){
+  .wrap{padding-left:.9rem; padding-right:.9rem}
+  h1{font-size:1.6rem}
+  ol>li{padding-left:1.9rem}
+  ol>li figure,ol>li .warn,ol>li pre{margin-left:-1.9rem}
+}

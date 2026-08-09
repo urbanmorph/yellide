@@ -22,8 +22,10 @@ build/
 # Tangential exploration / research / scratch — never committed (repo discipline)
 supporting-docs/
 
-# Built bundle
+# Built bundle. The copy served by the website IS tracked — without it a fresh
+# clone deploys a site whose download button 404s.
 *.mcpb
+!site/yellide.mcpb
 
 # browser-automation scratch
 .playwright-mcp/
