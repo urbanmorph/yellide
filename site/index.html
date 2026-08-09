@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yellide — find what you shot</title>
+<meta name="description" content="A free, local tool that makes an unrememberable media archive searchable — by you and by your own AI. Nothing is uploaded.">
+<style>
+  :root{--bg:#faf9f7;--fg:#1a1a18;--dim:#6b6862;--rule:#e5e1da;--accent:#b4451f}
+  @media (prefers-color-scheme:dark){:root{--bg:#141413;--fg:#eeece7;--dim:#9a968e;--rule:#2c2a27;--accent:#ff8a5c}}
+  :root[data-theme=dark]{--bg:#141413;--fg:#eeece7;--dim:#9a968e;--rule:#2c2a27;--accent:#ff8a5c}
+  :root[data-theme=light]{--bg:#faf9f7;--fg:#1a1a18;--dim:#6b6862;--rule:#e5e1da;--accent:#b4451f}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:16px/1.65 ui-serif,Georgia,"Times New Roman",serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:44rem;margin:0 auto;padding:5rem 1.25rem 6rem}
+  .kn{font-size:2.6rem;line-height:1;letter-spacing:-.01em;margin:0}
+  h1{font-size:1.05rem;margin:.9rem 0 0;letter-spacing:.14em;text-transform:uppercase;
+     font-family:ui-sans-serif,system-ui,sans-serif;color:var(--dim);font-weight:600}
+  .lede{font-size:1.3rem;line-height:1.5;margin:2rem 0 0;max-width:34rem}
+  .tag{color:var(--dim);font-style:italic;margin:.6rem 0 0}
+  .cta{display:inline-block;margin:2.5rem 0 0;padding:.7rem 1.4rem;border:1px solid var(--fg);
+       border-radius:999px;text-decoration:none;color:var(--fg);
+       font:.95rem ui-sans-serif,system-ui,sans-serif}
+  .cta:hover{background:var(--fg);color:var(--bg)}
+  .cta small{color:inherit;opacity:.6;margin-left:.5rem}
+  h2{font-size:1.05rem;margin:4rem 0 1rem;letter-spacing:.02em;text-transform:uppercase;
+     font-family:ui-sans-serif,system-ui,sans-serif;color:var(--dim)}
+  .ask{border-left:2px solid var(--accent);padding-left:1.1rem;margin:1.4rem 0}
+  .ask p{margin:.2rem 0;font-style:italic}
+  .ask span{display:block;font-style:normal;color:var(--dim);font-size:.92rem;margin:.15rem 0 .9rem}
+  ul{padding-left:1.1rem}
+  li{margin:.5rem 0}
+  a{color:inherit;text-decoration-color:var(--dim);text-underline-offset:3px}
+  hr{border:0;border-top:1px solid var(--rule);margin:4rem 0}
+  .foot{color:var(--dim);font-size:.9rem}
+  b.k{font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="kn">ಎಲ್ಲಿದೆ</p>
+<h1>Yellide</h1>
+
+<p class="lede">You shot it. You know you shot it. You have no idea which drive it is on.</p>
+<p class="tag">Kannada for “where is it?”</p>
+
+<a class="cta" href="/install.html">Install for Claude Desktop <small>free · MIT</small></a>
+
+<h2>What you can ask</h2>
+
+<div class="ask">
+  <p>“What media files do I have on this Mac?”</p>
+  <span>8,910 files across sixteen places you had forgotten about — including the one you spelled wrong.</span>
+  <p>“Find the cycling event”</p>
+  <span>Finds it by what is in the picture, not what the file is called.</span>
+  <p>“Where did that clip go?”</p>
+  <span>On KERALA_2023. That drive isn’t plugged in.</span>
+</div>
+
+<h2>How it works</h2>
+<ul>
+  <li><b class="k">It finds your media itself.</b> No folder pickers, no paths. You don’t know
+      where everything is — that’s the problem it exists to solve.</li>
+  <li><b class="k">It reads what is already there.</b> Dates, cameras, lenses, GPS, duration.
+      Seconds, not hours, and no AI required.</li>
+  <li><b class="k">Your own AI describes the rest.</b> It hands pictures to Claude, and one
+      description covers a whole shoot — a single caption can cover hundreds of files.</li>
+  <li><b class="k">It never forgets.</b> Rename or move a file and the index follows. Delete it
+      and it still knows what you had, and which drive it was on.</li>
+  <li><b class="k">Unplugged drives stay searchable.</b> That is the whole point.</li>
+</ul>
+
+<h2>What it will not do</h2>
+<ul>
+  <li>Upload anything. There is no server and no account.</li>
+  <li>Modify, move or rename a single one of your files.</li>
+  <li>Download your cloud files. iCloud and Dropbox placeholders are detected and left alone.</li>
+  <li>Put your private documents in a search index. An ID card or medical report is labelled by
+      type only — never by its contents — and redacted if you export.</li>
+</ul>
+
+<hr>
+<p class="foot">
+Free, MIT-licensed, and about 2,200 lines of plain JavaScript with no dependencies.<br>
+Built for one creative director who couldn’t find his own footage.<br>
+<a href="/install.html">Install</a> · <a href="https://github.com/urbanmorph/yellide">Source</a>
+</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Install Yellide</title>
+<meta name="description" content="Install Yellide in Claude Desktop. Two minutes, no terminal.">
+<style>
+  :root{--bg:#faf9f7;--fg:#1a1a18;--dim:#6b6862;--rule:#e5e1da;--warn:#8a2a1a;--warnbg:#fdf2ef;--ok:#1f6b3a}
+  @media (prefers-color-scheme:dark){:root{--bg:#141413;--fg:#eeece7;--dim:#9a968e;--rule:#2c2a27;--warn:#ff9b85;--warnbg:#2a1512;--ok:#7fd39b}}
+  :root[data-theme=dark]{--bg:#141413;--fg:#eeece7;--dim:#9a968e;--rule:#2c2a27;--warn:#ff9b85;--warnbg:#2a1512;--ok:#7fd39b}
+  :root[data-theme=light]{--bg:#faf9f7;--fg:#1a1a18;--dim:#6b6862;--rule:#e5e1da;--warn:#8a2a1a;--warnbg:#fdf2ef;--ok:#1f6b3a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:16px/1.65 ui-serif,Georgia,"Times New Roman",serif;
+       -webkit-font-smoothing:antialiased}
+  .wrap{max-width:44rem;margin:0 auto;padding:3.5rem 1.25rem 6rem}
+  h1{font-size:2.1rem;line-height:1.15;margin:0 0 .4rem;letter-spacing:-.02em}
+  .sub{color:var(--dim);margin:0 0 2.5rem}
+  h2{font-size:1.05rem;margin:3rem 0 .75rem;letter-spacing:.02em;text-transform:uppercase;
+     font-family:ui-sans-serif,system-ui,sans-serif;color:var(--dim)}
+  ol{padding-left:0;list-style:none;counter-reset:s}
+  ol>li{counter-increment:s;position:relative;padding-left:2.6rem;margin:0 0 2rem}
+  ol>li::before{content:counter(s);position:absolute;left:0;top:.1rem;width:1.7rem;height:1.7rem;
+    border:1px solid var(--rule);border-radius:50%;display:grid;place-items:center;
+    font:600 .8rem/1 ui-sans-serif,system-ui,sans-serif;color:var(--dim)}
+  .note{border-left:2px solid var(--rule);padding:.1rem 0 .1rem 1rem;margin:.9rem 0;color:var(--dim);font-size:.95rem}
+  .warn{background:var(--warnbg);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent);
+        border-radius:6px;padding:1rem 1.15rem;margin:1rem 0}
+  .warn b{color:var(--warn)}
+  figure{margin:1.1rem 0;border:1px solid var(--rule);border-radius:6px;overflow:hidden;background:var(--bg)}
+  figure img{display:block;width:100%;height:auto}
+  figcaption{font:.85rem/1.5 ui-sans-serif,system-ui,sans-serif;color:var(--dim);
+             padding:.6rem .85rem;border-top:1px solid var(--rule)}
+  .slot{aspect-ratio:16/9;display:grid;place-items:center;color:var(--dim);
+        font:.85rem ui-sans-serif,system-ui,sans-serif;text-align:center;padding:1rem;
+        background:repeating-linear-gradient(45deg,transparent,transparent 9px,var(--rule) 9px,var(--rule) 10px)}
+  code{font:.9em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--rule);
+       padding:.12em .4em;border-radius:3px}
+  pre{background:var(--rule);padding:.9rem 1rem;border-radius:6px;overflow-x:auto;
+      font:.85rem/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+  a{color:inherit;text-decoration-color:var(--dim);text-underline-offset:3px}
+  .say{border:1px solid var(--rule);border-radius:6px;padding:1rem 1.2rem;margin:1rem 0}
+  .say p{margin:.4rem 0;font-style:italic}
+  hr{border:0;border-top:1px solid var(--rule);margin:3.5rem 0}
+  .foot{color:var(--dim);font-size:.9rem}
+  .ok{color:var(--ok)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Install Yellide</h1>
+<p class="sub">Two minutes. You will not need a terminal, and you will never type a file path.</p>
+
+<h2>Before you start</h2>
+<p>You need <a href="https://claude.ai/download">Claude Desktop</a> — the app, not the website.
+A website cannot read files on your computer, so it cannot help you find your footage.</p>
+
+<h2>Install</h2>
+<ol>
+
+<li>
+<b>Download <code>yellide.mcpb</code></b> from
+<a href="https://github.com/urbanmorph/yellide/releases">the releases page</a>.
+<div class="note">It is about 45 KB. Everything Yellide does happens on your machine.</div>
+</li>
+
+<li>
+<b>Drag the file onto the Claude Desktop window.</b>
+<div class="note">Or: Settings → Extensions → Advanced settings → Install Extension…</div>
+</li>
+
+<li>
+<b>You will see a red warning. Read it, then click <em>Install Anyway</em>.</b>
+
+<div class="warn">
+<p><b>“Installing will grant this extension access to everything on your computer. Any
+developer information shown has not been verified by Anthropic.”</b></p>
+<p style="margin-bottom:0">That is true, and it is true of every local extension — including
+Anthropic’s own Filesystem one. It appears because we have not paid for a code-signing
+certificate, not because anything is wrong.</p>
+</div>
+
+<p>What Yellide actually does, which you can check for yourself in
+<a href="https://github.com/urbanmorph/yellide">the source</a>:</p>
+<ul>
+  <li>Reads metadata headers, plus the first and last megabyte of each file to identify it</li>
+  <li><b>Never</b> modifies, moves, renames or deletes anything</li>
+  <li>Makes <b>no network calls</b></li>
+  <li>Skips iCloud and Dropbox placeholder files rather than downloading them</li>
+</ul>
+
+<figure>
+  <div class="slot">screenshot: the red “Install Anyway” dialog<br>→ <code>site/img/warning.png</code></div>
+  <figcaption>The warning you will see. Clicking Install Anyway is the correct answer.</figcaption>
+</figure>
+</li>
+
+<li>
+<b>Quit Claude Desktop and open it again.</b>
+<div class="note">Cmd-Q, not just closing the window. Extensions load at startup.</div>
+</li>
+
+</ol>
+
+<h2>Now just ask</h2>
+
+<div class="say">
+<p>“What media files do I have on this Mac?”</p>
+</div>
+
+<p>Yellide finds your photos and videos by itself and starts indexing. Within seconds you can
+search by date, camera, folder and location. Then it will offer to look at your pictures and
+describe what is in them, so you can search for <em>what things are</em> rather than what
+they are called.</p>
+
+<div class="say">
+<p>“Find the cycling event”  ·  “What did I shoot in March 2020?”</p>
+<p>“Show me everything from the D610”  ·  “Open that one”</p>
+</div>
+
+<hr>
+
+<h2>If something goes wrong</h2>
+
+<p><b>It answers from memory instead of looking.</b> Ask
+<em>“what media files do I have on this Mac?”</em> rather than “what’s in my archive” — the
+word <em>archive</em> can be read as your past conversations.</p>
+
+<p><b>It says the index is empty.</b> The first scan runs in the background. Ask again in a
+minute; searching works on whatever has been indexed so far.</p>
+
+<p><b>Do not drag a media folder into the chat window.</b> That tries to read every file into
+the conversation and will fail on a large folder. Yellide finds your folders itself — there is
+nothing to attach.</p>
+
+<figure>
+  <div class="slot">screenshot: Settings → Extensions → Yellide, showing the version<br>→ <code>site/img/installed.png</code></div>
+  <figcaption>Check the version here. Extensions do not update themselves — reinstall to upgrade.</figcaption>
+</figure>
+
+<p><b>You updated but nothing changed.</b> A sideloaded extension keeps running the old code
+until you uninstall, reinstall, and restart the app. Check the version number on that screen.</p>
+
+<h2>Other apps</h2>
+
+<p>Yellide is a standard MCP server, so anything that speaks MCP over stdio can use it —
+Codex, Cursor, LM Studio, Cline, Goose. Point them at:</p>
+
+<pre>command: node
+args:    /path/to/yellide/server/index.js</pre>
+
+<div class="warn">
+<p style="margin:0"><b>Watch for a stray space.</b> Pasting a path into a settings field can
+pick up a leading space, and the app will report no error at all — the server simply never
+starts. It cost us an hour.</p>
+</div>
+
+<hr>
+<p class="foot">
+Yellide is free and MIT-licensed. Nothing is uploaded and there is no account.
+If it ever disappears, <code>export</code> writes your whole index to plain JSON.<br>
+<a href="/">Home</a> · <a href="https://github.com/urbanmorph/yellide">Source</a>
+</p>
+
+</div>
+</body>
+</html>
