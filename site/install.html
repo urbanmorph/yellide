@@ -214,21 +214,43 @@ No obvious problems detected.</pre>
 <p>If something is wrong, the last line says so in plain words rather than leaving you to
 guess.</p>
 
-<h2>Other apps</h2>
+<h2>Other apps &mdash; ChatGPT, Codex, DeepSeek, Cursor</h2>
 
-<p>Yellide is a standard MCP server, so anything that speaks MCP over stdio can use it —
-Codex, Cursor, LM Studio, Cline, Goose. Point them at:</p>
+<p>Yellide is a plain MCP server over stdio and nothing in it is specific to Claude, so any
+client that speaks MCP can use it. Point it at:</p>
 
 <pre>command: node
 args:    /path/to/yellide/server/index.js</pre>
 
 <div class="warn">
 <p style="margin:0"><b>Watch for a stray space.</b> Pasting a path into a settings field can
-pick up a leading space, and the app will report no error at all — the server simply never
-starts. It cost us an hour.</p>
+pick up a leading space, and the app will report no error at all &mdash; the server simply
+never starts. It cost us an hour.</p>
 </div>
 
-</main>
+<p>What you get depends on one thing: <b class="k">whether your AI can see pictures.</b></p>
+
+<table>
+<tr><th>Works with any client</th><td>Filenames, folders, project names, dates, cameras,
+lenses, places, durations, and drives that are not plugged in. All thirteen tools.</td></tr>
+<tr><th>Needs an AI that sees</th><td>Searching by <em>what is in the picture</em>. Yellide
+hands the actual images back and your AI writes down what it sees. A text-only model
+receives pictures it cannot look at, so nothing gets described.</td></tr>
+</table>
+
+<p>In practice: <b class="k">ChatGPT and Codex</b> use models that can see, so both halves
+should work &mdash; though a capable client sometimes prefers its own file search over
+Yellide, and you may have to ask for Yellide by name. <b class="k">DeepSeek&rsquo;s</b> chat
+models are text-only, so you get everything except the describing pass. That is a limit of
+the model, not a bug, and metadata search alone is still most of a working index.</p>
+
+<p class="note">The describing pass also needs macOS today, because it makes thumbnails with
+<code>sips</code> and video frames with <code>qlmanage</code> &mdash; both built in, which is
+why Yellide has no dependencies. And Node 22.5 or newer: Claude Desktop bundles its own, but
+other clients use yours.</p>
+
+<p>Claude Desktop is the tested path. If you have the choice, start there and try the others
+once you know what working looks like.</p>
 
 <hr>
 <p class="foot">Yellide is free and MIT-licensed. Nothing is uploaded and there is no account. If it ever disappears, <code>export</code> writes your whole index to plain JSON.<br>
