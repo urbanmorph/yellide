@@ -543,3 +543,66 @@ module.exports.look = look;
 module.exports.writeAnnotations = writeAnnotations;
 module.exports.reindex = reindex;
 module.exports.visionCapability = vision.capability;
+
+
+// ============================================================ diagnostics
+// A remote user with no telemetry is a user we cannot help. This produces a report they
+// can READ before sending — counts, timings, errors, capabilities. No paths, no filenames,
+// no captions, no queries. Consent-based by construction: it is text they choose to paste.
+function diagnosticsReport(db, runtime) {
+  const q = (sql, d = 0) => { try { return db.prepare(sql).get().n; } catch { return d; } };
+  const pg = (() => { try { return captionProgress(db); } catch { return {}; } })();
+  const cap = vision.capability();
+  const L = [];
+  const add = (k, v) => L.push(k.padEnd(22) + v);
+
+  L.push('YELLIDE DIAGNOSTIC REPORT');
+  L.push('Contains no filenames, paths, captions or search terms. Safe to share.');
+  L.push('');
+  add('version', (runtime && runtime.server_version) || 'unknown');
+  add('node', (runtime && runtime.node_version) || process.version);
+  add('platform', (runtime && runtime.platform) || (process.platform + ' ' + process.arch));
+  add('bundled runtime', runtime && runtime.bundled_by_electron ? 'yes (host app)' : 'no (system node)');
+  add('schema version', q('select max(v) n from schema_version'));
+  add('can view pictures', cap.ok ? 'yes — ' + cap.via : 'NO — ' + (cap.reason || '').slice(0, 60));
+  add('can view video', cap.video || 'no');
+  L.push('');
+  add('assets indexed', q('select count(*) n from asset').toLocaleString());
+  add('  video/audio/image', ['video','audio','image'].map(k =>
+        q("select count(*) n from asset where kind='" + k + "'")).join(' / '));
+  add('locations', q('select count(*) n from location').toLocaleString());
+  add('  missing', q("select count(*) n from location where state='missing'"));
+  add('  cloud placeholders', q("select count(*) n from location where state='dematerialised'"));
+  add('annotations', q('select count(*) n from annotation').toLocaleString());
+  add('  captions', q("select count(*) n from annotation where key='caption'"));
+  add('  private items', q("select count(*) n from annotation where key='private'"));
+  add('content coverage', (pg.pct != null ? pg.pct + '%' : 'unknown') +
+      ' (' + (pg.files_described || 0) + ' of ' + (pg.files_total || 0) + ')');
+  L.push('');
+
+  const jobs = (() => { try {
+    return db.prepare('select state, count(*) n, max(finished_at) last from scan_job group by state').all();
+  } catch { return []; } })();
+  add('scans', jobs.length ? jobs.map(j => j.state + '=' + j.n).join(' ') : 'none recorded');
+  const failed = (() => { try {
+    return db.prepare("select error from scan_job where error is not null order by id desc limit 3").all();
+  } catch { return []; } })();
+  if (failed.length) { L.push(''); L.push('recent scan errors:'); failed.forEach(f => L.push('  ' + String(f.error).slice(0, 120))); }
+
+  let dbBytes = 0;
+  try { const fsx = require('fs'), st = require('./storage.js');
+        for (const x of ['', '-wal']) { try { dbBytes += fsx.statSync(st.catalogPath() + x).size; } catch {} } } catch {}
+  L.push('');
+  add('index size', (dbBytes / 1e6).toFixed(1) + ' MB');
+
+  // The most useful single signal: is anything obviously wrong?
+  const problems = [];
+  if (!q('select count(*) n from asset')) problems.push('Nothing indexed — the scan has not run or found nothing.');
+  if (!cap.ok) problems.push('Cannot view pictures on this platform, so content descriptions are unavailable.');
+  if (q("select count(*) n from scan_job where state='failed'")) problems.push('At least one scan failed — see errors above.');
+  L.push('');
+  L.push(problems.length ? 'LIKELY PROBLEMS:\n  - ' + problems.join('\n  - ')
+                         : 'No obvious problems detected.');
+  return { text: L.join('\n') };
+}
+module.exports.diagnosticsReport = diagnosticsReport;

@@ -7,6 +7,7 @@ const os = require('os'), path = require('path'), fs = require('fs');
 const { Worker } = require('worker_threads');
 const log = (...a) => process.stderr.write('[yellide] ' + a.join(' ') + '\n');
 
+const SERVER_VERSION = '0.9.5';
 const STARTED = Date.now();
 let core = null, coreErr = null, storage = null, discover = null, T = null;
 try {
@@ -323,7 +324,10 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: {
       kind: { type: 'string', enum: ['image','video'] }, limit: { type: 'number' } } } },
 
-  { name: 'diagnostics', description: 'Runtime and index health, for reporting a problem.',
+  { name: 'diagnostics', description:
+      'A shareable health report for when something is wrong: version, platform, capabilities, counts, ' +
+      'scan errors and a plain list of likely problems. Contains NO filenames, paths, captions or search ' +
+      'terms, so the user can safely paste it to whoever is helping them. Show it to them in full.',
     inputSchema: { type: 'object', properties: {} } },
 ];
 
@@ -411,7 +415,7 @@ function handle(req) {
         // Image blocks, not text — the agent has to actually see the picture.
         return send({ jsonrpc: '2.0', id, result: { content: T.look(db(), a.ids).blocks } });
       }
-      else if (n === 'diagnostics')  out = { ...probeRuntime(), vision: T.visionCapability() };
+      else if (n === 'diagnostics')  out = T.diagnosticsReport(db(), { ...probeRuntime(), server_version: SERVER_VERSION }).text;
       else out = { error: 'unknown tool ' + n };
     } catch (e) { out = { error: String(e.message), stack: String(e.stack).split('\n').slice(0, 4) }; }
     return send({ jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: typeof out === 'string' ? out : JSON.stringify(out, null, 2) }] } });

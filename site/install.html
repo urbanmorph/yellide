@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Install Yellide</title>
 <meta name="description" content="Install Yellide in Claude Desktop. Two minutes, no terminal.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#1a1a18">
 <style>
   :root{--bg:#faf9f7;--fg:#1a1a18;--dim:#6b6862;--rule:#e5e1da;--warn:#8a2a1a;--warnbg:#fdf2ef;--ok:#1f6b3a}
   @media (prefers-color-scheme:dark){:root{--bg:#141413;--fg:#eeece7;--dim:#9a968e;--rule:#2c2a27;--warn:#ff9b85;--warnbg:#2a1512;--ok:#7fd39b}}
@@ -45,11 +47,24 @@
   hr{border:0;border-top:1px solid var(--rule);margin:3.5rem 0}
   .foot{color:var(--dim);font-size:.9rem}
   .ok{color:var(--ok)}
+  .brand{display:flex;align-items:center;gap:.7rem;margin:0 0 2.5rem}
+  .brand .mk{flex:none}
+  .brand b{font:600 1.05rem ui-sans-serif,system-ui,sans-serif;letter-spacing:.01em}
+  .repro{padding:1.1rem;background:var(--warnbg);
+         border:1px solid color-mix(in srgb,var(--warn) 35%,transparent)}
+  .repro-row{display:flex;gap:.8rem;align-items:flex-start}
+  .repro-ico{color:var(--warn);font-size:1.1rem;line-height:1.4}
+  .repro p{margin:0;color:var(--warn);font-size:.95rem;line-height:1.55}
+  .repro-btns{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem}
+  .btn-ghost,.btn-solid{font:.85rem ui-sans-serif,system-ui,sans-serif;padding:.4rem 1rem;border-radius:6px}
+  .btn-ghost{border:1px solid var(--rule);color:var(--dim)}
+  .btn-solid{background:var(--fg);color:var(--bg);font-weight:600}
 </style>
 </head>
 <body>
 <div class="wrap">
 
+<div class="brand"><svg class="mk" viewBox="0 0 64 64" width="30" height="30" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#1a1a18"/><g fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 25v-4a3 3 0 0 1 3-3h4"/><path d="M46 25v-4a3 3 0 0 0-3-3h-4"/><path d="M18 39v4a3 3 0 0 0 3 3h4"/><path d="M46 39v4a3 3 0 0 1-3 3h-4"/></g><circle cx="37.5" cy="36.5" r="5" fill="#0d9488"/></svg><b>Yellide</b></div>
 <h1>Install Yellide</h1>
 <p class="sub">Two minutes. You will not need a terminal, and you will never type a file path.</p>
 
@@ -61,8 +76,7 @@ A website cannot read files on your computer, so it cannot help you find your fo
 <ol>
 
 <li>
-<b>Download <code>yellide.mcpb</code></b> from
-<a href="https://github.com/urbanmorph/yellide/releases">the releases page</a>.
+<b><a href="/yellide.mcpb" download>Download yellide.mcpb</a></b>
 <div class="note">It is about 45 KB. Everything Yellide does happens on your machine.</div>
 </li>
 
@@ -92,8 +106,15 @@ certificate, not because anything is wrong.</p>
 </ul>
 
 <figure>
-  <div class="slot">screenshot: the red “Install Anyway” dialog<br>→ <code>site/img/warning.png</code></div>
-  <figcaption>The warning you will see. Clicking Install Anyway is the correct answer.</figcaption>
+  <div class="repro">
+    <div class="repro-row"><span class="repro-ico">⚠</span>
+      <p>Installing will grant this extension access to everything on your computer. Any
+      developer information shown has not been verified by Anthropic. Ensure you trust the
+      source of this extension before installation.</p></div>
+    <div class="repro-btns"><span class="btn-ghost">Cancel</span><span class="btn-solid">Install Anyway</span></div>
+  </div>
+  <figcaption>A reproduction of the dialog, not a screenshot — this is what appears, word for word.
+  <b>Install Anyway</b> is the correct answer.</figcaption>
 </figure>
 </li>
 
@@ -135,13 +156,36 @@ minute; searching works on whatever has been indexed so far.</p>
 the conversation and will fail on a large folder. Yellide finds your folders itself — there is
 nothing to attach.</p>
 
-<figure>
-  <div class="slot">screenshot: Settings → Extensions → Yellide, showing the version<br>→ <code>site/img/installed.png</code></div>
-  <figcaption>Check the version here. Extensions do not update themselves — reinstall to upgrade.</figcaption>
-</figure>
+<p class="note">Check the version at <b>Settings → Extensions → Yellide</b>. Extensions never
+update themselves — to upgrade you must uninstall, install the new file, and restart the app.</p>
 
 <p><b>You updated but nothing changed.</b> A sideloaded extension keeps running the old code
 until you uninstall, reinstall, and restart the app. Check the version number on that screen.</p>
+
+<h2>Still stuck?</h2>
+
+<p>Ask Claude, in the same chat:</p>
+
+<div class="say"><p>“Run Yellide diagnostics and show me the report.”</p></div>
+
+<p>You will get something like this. <b>Read it, then send it to whoever is helping you.</b>
+It deliberately contains no filenames, no paths, no descriptions and no search terms — only
+counts and capabilities — so it is safe to paste anywhere.</p>
+
+<pre>YELLIDE DIAGNOSTIC REPORT
+Contains no filenames, paths, captions or search terms. Safe to share.
+
+version               0.9.5
+platform              darwin arm64
+can view pictures     yes — sips (built into macOS)
+assets indexed        8,910
+  cloud placeholders  7,862
+content coverage      42% (3950 of 9446)
+
+No obvious problems detected.</pre>
+
+<p>If something is wrong, the last line says so in plain words rather than leaving you to
+guess.</p>
 
 <h2>Other apps</h2>
 

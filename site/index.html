@@ -5,15 +5,18 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Yellide — find what you shot</title>
 <meta name="description" content="A free, local tool that makes an unrememberable media archive searchable — by you and by your own AI. Nothing is uploaded.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#1a1a18">
 <style>
-  :root{--bg:#faf9f7;--fg:#1a1a18;--dim:#6b6862;--rule:#e5e1da;--accent:#b4451f}
-  @media (prefers-color-scheme:dark){:root{--bg:#141413;--fg:#eeece7;--dim:#9a968e;--rule:#2c2a27;--accent:#ff8a5c}}
-  :root[data-theme=dark]{--bg:#141413;--fg:#eeece7;--dim:#9a968e;--rule:#2c2a27;--accent:#ff8a5c}
-  :root[data-theme=light]{--bg:#faf9f7;--fg:#1a1a18;--dim:#6b6862;--rule:#e5e1da;--accent:#b4451f}
+  :root{--bg:#faf9f7;--fg:#1a1a18;--dim:#6b6862;--rule:#e5e1da;--accent:#0d9488}
+  @media (prefers-color-scheme:dark){:root{--bg:#141413;--fg:#eeece7;--dim:#9a968e;--rule:#2c2a27;--accent:#2dd4bf}}
+  :root[data-theme=dark]{--bg:#141413;--fg:#eeece7;--dim:#9a968e;--rule:#2c2a27;--accent:#2dd4bf}
+  :root[data-theme=light]{--bg:#faf9f7;--fg:#1a1a18;--dim:#6b6862;--rule:#e5e1da;--accent:#0d9488}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);
        font:16px/1.65 ui-serif,Georgia,"Times New Roman",serif;-webkit-font-smoothing:antialiased}
   .wrap{max-width:44rem;margin:0 auto;padding:5rem 1.25rem 6rem}
+  .mk{display:block;margin:0 0 1.5rem}
   .kn{font-size:2.6rem;line-height:1;letter-spacing:-.01em;margin:0}
   h1{font-size:1.05rem;margin:.9rem 0 0;letter-spacing:.14em;text-transform:uppercase;
      font-family:ui-sans-serif,system-ui,sans-serif;color:var(--dim);font-weight:600}
@@ -40,6 +43,7 @@
 <body>
 <div class="wrap">
 
+<svg class="mk" viewBox="0 0 64 64" width="30" height="30" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#1a1a18"/><g fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 25v-4a3 3 0 0 1 3-3h4"/><path d="M46 25v-4a3 3 0 0 0-3-3h-4"/><path d="M18 39v4a3 3 0 0 0 3 3h4"/><path d="M46 39v4a3 3 0 0 1-3 3h-4"/></g><circle cx="37.5" cy="36.5" r="5" fill="#0d9488"/></svg>
 <p class="kn">ಎಲ್ಲಿದೆ</p>
 <h1>Yellide</h1>
 

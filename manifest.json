@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "yellide",
   "display_name": "Yellide",
-  "version": "0.9.5",
+  "version": "0.9.6",
   "description": "Find what you shot. Indexes your video, audio and photos across every folder and drive, describes what is in them with your own AI, and keeps it searchable when the drive is unplugged.",
   "long_description": "\u0c8e\u0cb2\u0ccd\u0cb2\u0cbf\u0ca6\u0cc6 \u2014 Kannada for \u201cwhere is it?\u201d\n\nYellide builds a searchable index of the media you have made, wherever it lives: internal disk, external drives, iCloud, Dropbox. You never tell it a path \u2014 it finds your media itself and ranks the locations by how much is there.\n\nEverything stays on your machine. It reads only metadata headers plus the first and last megabyte of each file (to identify it), never modifies, moves or renames anything, and makes no network calls. Cloud placeholder files are detected and skipped without being downloaded.\n\nOnce a drive is indexed it stays searchable after you unplug it \u2014 Yellide will tell you which drive to fetch. Deleting a file removes the bytes, not the knowledge: the entry stays, marked missing.\n\nAsk it: \u201cwhat media can you find?\u201d \u00b7 \u201cindex everything\u201d \u00b7 \u201cwhat did I shoot in March 2020?\u201d \u00b7 \u201copen that one\u201d.",
   "author": {
@@ -54,10 +54,6 @@
       "description": "Write the whole index to plain JSON."
     },
     {
-      "name": "diagnostics",
-      "description": "Runtime and index health."
-    },
-    {
       "name": "get_work",
       "description": "Shoot representatives that still need a caption."
     },
@@ -72,6 +68,10 @@
     {
       "name": "caption_next",
       "description": "The captioning loop: next undescribed shoots plus their pictures, in one call."
+    },
+    {
+      "name": "diagnostics",
+      "description": "A shareable health report \u2014 counts and capabilities only, no filenames or paths."
     }
   ],
   "user_config": {
