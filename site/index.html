@@ -13,6 +13,7 @@
   :root[data-theme=dark]{--bg:#141413;--fg:#eeece7;--dim:#9a968e;--rule:#2c2a27;--accent:#2dd4bf}
   :root[data-theme=light]{--bg:#faf9f7;--fg:#1a1a18;--dim:#6b6862;--rule:#e5e1da;--accent:#0d9488}
   *{box-sizing:border-box}
+  .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   body{margin:0;background:var(--bg);color:var(--fg);
        font:16px/1.65 ui-serif,Georgia,"Times New Roman",serif;-webkit-font-smoothing:antialiased}
   .wrap{max-width:44rem;margin:0 auto;padding:5rem 1.25rem 6rem}
@@ -45,7 +46,7 @@
 
 <div class="lock">
   <svg class="mk" viewBox="14 12 95 95" width="34" height="34" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><circle cx="52" cy="50" r="31"/><path d="M75 72 L100 98" stroke-width="11"/><path d="M38 34 L52 51 L52 68"/><path d="M66 34 L52 51"/></g><circle cx="52" cy="68" r="5.5" fill="#0d9488"/></svg>
-  <h1>Yellide</h1>
+  <h1><span class="vh">Y</span>ellide</h1>
 </div>
 
 <p class="lede">You shot it. You know you shot it.<br>You have no idea which drive it is on.</p>

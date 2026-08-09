@@ -13,6 +13,7 @@
   :root[data-theme=dark]{--bg:#141413;--fg:#eeece7;--dim:#9a968e;--rule:#2c2a27;--warn:#ff9b85;--warnbg:#2a1512;--ok:#7fd39b}
   :root[data-theme=light]{--bg:#faf9f7;--fg:#1a1a18;--dim:#6b6862;--rule:#e5e1da;--warn:#8a2a1a;--warnbg:#fdf2ef;--ok:#1f6b3a}
   *{box-sizing:border-box}
+  .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   body{margin:0;background:var(--bg);color:var(--fg);
        font:16px/1.65 ui-serif,Georgia,"Times New Roman",serif;
        -webkit-font-smoothing:antialiased}
@@ -64,7 +65,7 @@
 <body>
 <div class="wrap">
 
-<div class="brand"><svg class="mk" viewBox="14 12 95 95" width="34" height="34" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><circle cx="52" cy="50" r="31"/><path d="M75 72 L100 98" stroke-width="11"/><path d="M38 34 L52 51 L52 68"/><path d="M66 34 L52 51"/></g><circle cx="52" cy="68" r="5.5" fill="#0d9488"/></svg><b>Yellide</b></div>
+<div class="brand"><svg class="mk" viewBox="14 12 95 95" width="34" height="34" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><circle cx="52" cy="50" r="31"/><path d="M75 72 L100 98" stroke-width="11"/><path d="M38 34 L52 51 L52 68"/><path d="M66 34 L52 51"/></g><circle cx="52" cy="68" r="5.5" fill="#0d9488"/></svg><b><span class="vh">Y</span>ellide</b></div>
 <h1>Install Yellide</h1>
 <p class="sub">Two minutes. You will not need a terminal, and you will never type a file path.</p>
 
