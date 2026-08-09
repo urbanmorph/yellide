@@ -5,7 +5,7 @@
    is an argument that Yellide translates one into the other. */
 
 :root{
-  --paper:#f2f1ec; --ink:#17161a; --dim:#6f6c66; --rule:#dedad1; --mark:#0d9488;
+  --paper:#f2f1ec; --ink:#17161a; --dim:#63605a; --rule:#dedad1; --mark:#0d9488;
   --warn:#8a2a1a; --warnbg:#f7ece7; --ok:#1f6b3a;
   --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
   --sans:ui-sans-serif,system-ui,-apple-system,sans-serif;
@@ -19,7 +19,7 @@
 }
 :root[data-theme=dark]{--paper:#131315; --ink:#e9e7e2; --dim:#8d8a83; --rule:#2a2926;
                        --mark:#2dd4bf; --warn:#ff9b85; --warnbg:#2a1512; --ok:#7fd39b}
-:root[data-theme=light]{--paper:#f2f1ec; --ink:#17161a; --dim:#6f6c66; --rule:#dedad1;
+:root[data-theme=light]{--paper:#f2f1ec; --ink:#17161a; --dim:#63605a; --rule:#dedad1;
                         --mark:#0d9488; --warn:#8a2a1a; --warnbg:#f7ece7; --ok:#1f6b3a}
 
 *{box-sizing:border-box}
@@ -80,13 +80,14 @@ b.k{font-weight:600}
 .cta{display:inline-block; margin:2.6rem 0 0; padding:.72rem 1.5rem; border:1px solid var(--ink);
      border-radius:2px; text-decoration:none; color:var(--ink); font:.95rem var(--sans)}
 .cta:hover{background:var(--ink); color:var(--paper)}
-.cta small{opacity:.55; margin-left:.6rem}
+.cta small{color:var(--dim); margin-left:.6rem}
 .note{border-left:2px solid var(--rule); padding:.1rem 0 .1rem 1rem; margin:.9rem 0;
       color:var(--dim); font-size:.95rem}
 .warn{background:var(--warnbg); border:1px solid color-mix(in srgb,var(--warn) 30%,transparent);
       border-radius:3px; padding:1rem 1.15rem; margin:1.1rem 0}
 .warn b{color:var(--warn)}
-code{font:.88em var(--mono); background:color-mix(in srgb,var(--rule) 70%,transparent);
+code{font:.88em var(--mono); color:var(--ink);
+     background:color-mix(in srgb,var(--rule) 70%,transparent);
      padding:.12em .4em; border-radius:2px}
 pre{background:color-mix(in srgb,var(--rule) 55%,transparent); padding:.9rem 1rem;
     border-radius:3px; overflow-x:auto; font:.82rem/1.55 var(--mono)}
