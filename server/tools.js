@@ -206,15 +206,24 @@ function search(db, query, opts = {}) {
                   best?.state === 'missing' ? '  ⚠ not on disk any more' :
                   best?.state === 'dematerialised' ? '  ☁ in the cloud, not downloaded' : '';
     const extra = all.length > live && live > 0 ? `  (+${all.length - live} old path${all.length - live > 1 ? 's' : ''})` : '';
-    return `${i + 1}. ${best?.filename || '(unknown)'} — ${bits.join(' · ')}${state}\n` +
+    // The id has to be IN THE TEXT. Every other tool — show_pictures, reveal, get_asset —
+    // is keyed by id, and the text is all the agent actually receives. Without it, search
+    // is a dead end: it can describe a hit but nothing can act on it.
+    return `${i + 1}. [id ${r.id}] ${best?.filename || '(unknown)'} — ${bits.join(' · ')}${state}\n` +
            `   ${tilde(fullPath(best))}${extra}`;
   });
 
   const head = total > rows.length
     ? `${rows.length} of ${total} matches for "${query}" (best first)`
     : `${rows.length} match${rows.length === 1 ? '' : 'es'} for "${query}"`;
-  return { text: head + '\n\n' + out.join('\n'), data: rows.map(r => ({ id: r.id, filename: r.camera })),
-           truncated: total > rows.length, total };
+  const ids = rows.map(r => r.id);
+  const foot = ids.length
+    ? `\n\nIds: ${ids.join(', ')}\nPass these to show_pictures to put the frames in front of the `
+      + `user, or to reveal / get_asset for one of them.`
+    : '';
+  return { text: head + '\n\n' + out.join('\n') + foot,
+           data: rows.map(r => ({ id: r.id, filename: locationsFor(db, r.id).best?.filename || null })),
+           ids, truncated: total > rows.length, total };
 }
 
 // ---------------------------------------------------------------- get_asset

@@ -11,6 +11,21 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.13] — 2026-08-09
+
+### Fixed
+
+- **`search` never returned asset ids**, so nothing could act on a result. Every other tool
+  — `show_pictures`, `reveal`, `get_asset` — is keyed by id, and the text is all the agent
+  actually receives. Asked to show 245 cycling matches, Claude could only display five,
+  because it had paths and needed ids. It diagnosed this itself and said so in the reply,
+  which is the only reason it surfaced: the search worked, the answer was accurate, and the
+  gap was invisible from every log.
+
+  Each hit now reads `1. [id 402] filename — …`, and the result ends with the full id list.
+
+- `search`'s structured data set `filename` to the camera model. Now the filename.
+
 ## [0.9.12] — 2026-08-09
 
 ### Added
@@ -129,6 +144,7 @@ The first version that does the whole job.
 - Private documents are labelled by type and never by content, and are redacted on export.
 - `export` writes the whole index to plain JSON, so nothing here is a one-way door.
 
+[0.9.13]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.13
 [0.9.12]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.12
 [0.9.11]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.11
 [0.9.10]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.10
