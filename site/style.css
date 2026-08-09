@@ -22,6 +22,11 @@
 :root[data-theme=light]{--paper:#f2f1ec; --ink:#17161a; --dim:#63605a; --rule:#dedad1;
                         --mark:#0d9488; --warn:#8a2a1a; --warnbg:#f7ece7; --ok:#1f6b3a}
 
+/* The name renders the same everywhere, rather than in whatever Kannada font the
+   reader happens to have. 2.1 KB: seven codepoints, one weight, shaping kept. */
+@font-face{font-family:Kannada; src:url(/fonts/kannada.woff2) format('woff2');
+           font-display:swap; unicode-range:U+0C80-0CFF}
+
 *{box-sizing:border-box}
 body{margin:0; background:var(--paper); color:var(--ink);
      font:17px/1.55 var(--serif); -webkit-font-smoothing:antialiased}
@@ -46,6 +51,8 @@ h2{font:600 .74rem var(--sans); letter-spacing:.12em; text-transform:uppercase;
 h3{font:600 1rem var(--sans); margin:2rem 0 .5rem; letter-spacing:.01em}
 .sub{color:var(--dim); font-size:1.02rem; margin:0 0 2.4rem; max-width:58ch}
 .kn{color:var(--dim); font-size:1rem; margin:.9rem 0 0}
+.kn b,.knw{font-family:Kannada,sans-serif; font-weight:400; font-size:1.18em;
+           line-height:1; color:var(--ink)}
 p{margin:1rem 0; max-width:64ch}
 ul{padding-left:1.05rem; max-width:64ch} li{margin:.5rem 0}
 a{color:inherit; text-decoration-color:var(--dim); text-underline-offset:3px}
