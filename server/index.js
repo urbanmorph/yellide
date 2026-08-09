@@ -7,7 +7,14 @@ const os = require('os'), path = require('path'), fs = require('fs');
 const { Worker } = require('worker_threads');
 const log = (...a) => process.stderr.write('[yellide] ' + a.join(' ') + '\n');
 
-const SERVER_VERSION = '0.9.5';
+// Read from the manifest, never written twice. Hardcoded literals here reported 0.9.5 to
+// the diagnostics tool and 0.1.0 to the MCP handshake for four releases running — and the
+// diagnostics report exists precisely to tell you which version you are on.
+const SERVER_VERSION = (() => {
+  try { return require(path.join(__dirname, '..', 'manifest.json')).version; }
+  catch { return 'unknown'; }
+})();
+const PKG_VERSION = SERVER_VERSION;
 const STARTED = Date.now();
 let core = null, coreErr = null, storage = null, discover = null, T = null;
 try {
@@ -331,6 +338,53 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: {} } },
 ];
 
+
+// Claude Desktop surfaces these in its "/" menu. That menu is the closest thing this
+// product has to a front door: there are no menus, no preferences and no empty state,
+// so without it nobody can find out what Yellide is willing to do.
+const PROMPTS = [
+  { name: 'find',
+    title: 'Yellide: find something',
+    description: 'Search your photos and videos — by what is in them, not just the filename.',
+    arguments: [{ name: 'what', description: 'e.g. the cycling event, drone shots from Kerala, March 2020', required: false }],
+    build: a => `Use Yellide to find ${a.what ? `"${a.what}"` : 'something in my media'} in my photos and videos on this Mac. `
+      + `Search captions and tags as well as filenames, folders, dates, camera and place. `
+      + `Show me what you find with enough detail that I can tell the shots apart, and offer to open one.` },
+
+  { name: 'index',
+    title: 'Yellide: index my media',
+    description: 'Find every photo and video on this Mac and build the searchable index.',
+    arguments: [],
+    build: () => `Use Yellide to find the media files on this Mac and index them. Do not ask me for a path — `
+      + `Yellide finds them itself. Start the scan, then keep checking progress and keep going until it is `
+      + `finished. Tell me what you found: how many files, across which places, and the date range.` },
+
+  { name: 'describe',
+    title: 'Yellide: describe my pictures',
+    description: 'Look at the pictures and write down what is in them, so you can search by subject.',
+    arguments: [],
+    build: () => `Use Yellide's captioning loop to make my archive searchable by subject. Call caption_next, `
+      + `look at the pictures it returns, and save what you see with write_annotations — one description per `
+      + `shoot, propagated. Mark anything that looks like an identity document, medical report or legal paper `
+      + `as private, by type only and never by content. Keep looping until there is nothing left to describe, `
+      + `and report progress as you go. Do not stop after one batch.` },
+
+  { name: 'archive',
+    title: 'Yellide: what do I have?',
+    description: 'An overview of everything indexed, including drives that are unplugged.',
+    arguments: [],
+    build: () => `Use Yellide to describe my archive: how many media files, where they live, the date range, `
+      + `which cameras, how much has been described so far, and which drives are known but not currently `
+      + `plugged in.` },
+
+  { name: 'diagnose',
+    title: 'Yellide: something is wrong',
+    description: 'A health report with no filenames or search terms in it, safe to share.',
+    arguments: [],
+    build: () => `Run Yellide diagnostics and show me the report in full, then explain in plain words what `
+      + `it means and what I should do next.` },
+];
+
 const send = m => process.stdout.write(JSON.stringify(m) + '\n');
 
 // Array-typed user_config expands into ARGV (the pattern Anthropic's own Filesystem
@@ -373,8 +427,19 @@ process.stdin.on('data', c => {
 function handle(req) {
   const { id, method, params } = req;
   if (method === 'initialize')
-    return send({ jsonrpc: '2.0', id, result: { protocolVersion: '2025-06-18', capabilities: { tools: {} },
-      serverInfo: { name: 'yellide', version: '0.1.0' } } });
+    return send({ jsonrpc: '2.0', id, result: { protocolVersion: '2025-06-18',
+      capabilities: { tools: {}, prompts: {} },
+      serverInfo: { name: 'yellide', version: PKG_VERSION } } });
+  // Claude Desktop lists these under "/". It is the only place Yellide is browsable.
+  if (method === 'prompts/list')
+    return send({ jsonrpc: '2.0', id, result: { prompts: PROMPTS.map(
+      ({ name, title, description, arguments: args }) => ({ name, title, description, arguments: args })) } });
+  if (method === 'prompts/get') {
+    const p = PROMPTS.find(x => x.name === params?.name);
+    if (!p) return send({ jsonrpc: '2.0', id, error: { code: -32602, message: `unknown prompt: ${params?.name}` } });
+    return send({ jsonrpc: '2.0', id, result: { description: p.description,
+      messages: [{ role: 'user', content: { type: 'text', text: p.build(params?.arguments || {}) } }] } });
+  }
   if (method === 'tools/list') return send({ jsonrpc: '2.0', id, result: { tools: TOOLS } });
   if (method === 'tools/call') {
     const a = params?.arguments || {}, dir = a.path || grantedDirs()[0];

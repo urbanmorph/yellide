@@ -10,6 +10,8 @@ If you are helping someone install or use Yellide, this is what to know.
 
 **A red warning appears during install** saying the extension gets access to everything on the computer and that Anthropic has not verified the developer. This is expected, it appears for every unsigned local extension including Anthropic's own Filesystem one, and the correct answer is "Install Anyway". This is the single most likely place a non-technical install fails.
 
+**Slash commands.** Yellide exposes MCP prompts, which Claude Desktop lists under `/`: `find`, `index`, `describe`, `archive`, `diagnose`. If the client supports prompts, pointing someone at `/` is faster than teaching them phrasing.
+
 **The first thing to say is "What media files do I have on this Mac?"** Use those words rather than "my archive" — archive is often read as the person's past conversations, and then the model answers from memory instead of calling a tool. Scanning runs in the background and search works on whatever has been indexed so far.
 
 **Two kinds of search.** Filename, folder, project name, date, camera, lens, GPS place and duration all work the moment a scan finishes. Searching by what is *in* a picture needs a describing pass first: Claude looks at representative frames and writes captions, and one caption covers a whole shoot, so a few minutes can cover hundreds of files. Say "look at my photos and describe what is in them", then "keep going until it is done" — it is a loop and it will stop early unless told to continue.

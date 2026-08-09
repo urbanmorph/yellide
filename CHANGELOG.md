@@ -11,6 +11,41 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.9] — 2026-08-09
+
+### Added
+
+- **Slash commands.** Yellide now exposes MCP prompts, which Claude Desktop lists under
+  `/`. MCP has no wake word — the model decides when to call a tool from its description —
+  so this is the nearest thing to a front door, and the only browsable surface a product
+  with no interface can have. Five: `find`, `index`, `describe`, `archive`, `diagnose`.
+
+### Fixed
+
+- **The version was hardcoded in two places and stale in both.** The MCP handshake had
+  reported `0.1.0` since the beginning, and the diagnostics tool reported `0.9.5` for four
+  releases — a report whose entire job is telling you which version you are running when
+  something is wrong. Both now read `manifest.json`, and `pack.sh` refuses to build if a
+  version literal reappears in `server/`.
+
+## [0.9.8] — 2026-08-09
+
+### Added
+
+- **The extension now carries its own icon.** Claude Desktop was generating a generic grey
+  "Y" placeholder from the name, because the bundle shipped no icon at all — so the mark was
+  invisible in the one place the product is actually seen. `icon.png` is now inside the
+  bundle.
+
+### Changed
+
+- **`long_description` rewritten to lead with content search.** It described only inventory
+  and location — where files live, which drive to fetch — and never mentioned that Claude
+  describes your pictures so you can search by subject. That is the differentiator, and it
+  was missing from the text a person reads while deciding whether to install.
+- The install page now carries real screenshots of the warning dialog and the installed
+  extension, replacing the CSS reproduction of the dialog.
+
 ## [0.9.7] — 2026-08-09
 
 ### Fixed
@@ -51,6 +86,8 @@ The first version that does the whole job.
 - Private documents are labelled by type and never by content, and are redacted on export.
 - `export` writes the whole index to plain JSON, so nothing here is a one-way door.
 
+[0.9.9]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.9
+[0.9.8]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.8
 [0.9.7]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.7
 [0.9.6]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.6
 [0.9.5]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.5

@@ -2,13 +2,14 @@
   "manifest_version": "0.3",
   "name": "yellide",
   "display_name": "Yellide",
-  "version": "0.9.7",
+  "version": "0.9.9",
   "description": "Find what you shot. Indexes your video, audio and photos across every folder and drive, describes what is in them with your own AI, and keeps it searchable when the drive is unplugged.",
-  "long_description": "\u0c8e\u0cb2\u0ccd\u0cb2\u0cbf\u0ca6\u0cc6 \u2014 Kannada for \u201cwhere is it?\u201d\n\nYellide builds a searchable index of the media you have made, wherever it lives: internal disk, external drives, iCloud, Dropbox. You never tell it a path \u2014 it finds your media itself and ranks the locations by how much is there.\n\nEverything stays on your machine. It reads only metadata headers plus the first and last megabyte of each file (to identify it), never modifies, moves or renames anything, and makes no network calls. Cloud placeholder files are detected and skipped without being downloaded.\n\nOnce a drive is indexed it stays searchable after you unplug it \u2014 Yellide will tell you which drive to fetch. Deleting a file removes the bytes, not the knowledge: the entry stays, marked missing.\n\nAsk it: \u201cwhat media can you find?\u201d \u00b7 \u201cindex everything\u201d \u00b7 \u201cwhat did I shoot in March 2020?\u201d \u00b7 \u201copen that one\u201d.",
+  "long_description": "ಎಲ್ಲಿದೆ — Kannada for “where is it?”\n\nYellide makes the media you have made searchable by WHAT IS IN IT, not only by what the files are called. It indexes wherever your media lives — internal disk, external drives, iCloud, Dropbox — and you never tell it a path. It finds your media itself and ranks the locations by how much is there.\n\nDates, cameras, lenses, places and durations are read straight out of the files in seconds. Then Claude looks at your pictures and writes down what it sees, and one description covers a whole shoot — so a few minutes of looking can make hundreds of files findable by subject. Ask for the cycling event, not for IMG_4471.MOV.\n\nEverything stays on your machine. It reads only metadata headers plus the first and last megabyte of each file (to identify it), never modifies, moves or renames anything, and makes no network calls. Cloud placeholder files are detected and skipped without being downloaded. ID cards and medical reports can be marked private: recorded by type only, never by content.\n\nOnce a drive is indexed it stays searchable after you unplug it — Yellide will tell you which drive to fetch. Deleting a file removes the bytes, not the knowledge: the entry stays, marked missing.\n\nAsk it: “what media files do I have on this Mac?” · “describe what is in my photos” · “find the cycling event” · “what did I shoot in March 2020?” · “open that one”.",
   "author": {
     "name": "urbanmorph"
   },
   "license": "MIT",
+  "icon": "icon.png",
   "server": {
     "type": "node",
     "entry_point": "server/index.js",
@@ -23,7 +24,7 @@
   "tools": [
     {
       "name": "describe_archive",
-      "description": "The photo, video and audio files on this computer and its drives \u2014 not past conversations. Call first for any question about them."
+      "description": "The photo, video and audio files on this computer and its drives — not past conversations. Call first for any question about them."
     },
     {
       "name": "search",
@@ -71,14 +72,14 @@
     },
     {
       "name": "diagnostics",
-      "description": "A shareable health report \u2014 counts and capabilities only, no filenames or paths."
+      "description": "A shareable health report — counts and capabilities only, no filenames or paths."
     }
   ],
   "user_config": {
     "restrict_to_folders": {
       "type": "directory",
-      "title": "Optional \u2014 limit Yellide to specific folders",
-      "description": "Leave this empty. Yellide finds your media by itself and you never need to know a path. Only set it if you want to restrict it to particular folders. Never drag a media folder into the chat window \u2014 that tries to read every file into the conversation.",
+      "title": "Optional — limit Yellide to specific folders",
+      "description": "Leave this empty. Yellide finds your media by itself and you never need to know a path. Only set it if you want to restrict it to particular folders. Never drag a media folder into the chat window — that tries to read every file into the conversation.",
       "multiple": true,
       "required": false,
       "default": []

@@ -36,6 +36,25 @@
 <p class="sub">Newest first. Extensions never update themselves — to move up a version you
 uninstall, install the new file, and restart Claude Desktop.</p>
 
+<h2>0.9.9 — 2026-08-09</h2>
+<h3>Added</h3>
+<ul>
+<li><b class="k">Slash commands.</b> Yellide now exposes MCP prompts, which Claude Desktop lists under <code>/</code>. MCP has no wake word — the model decides when to call a tool from its description — so this is the nearest thing to a front door, and the only browsable surface a product with no interface can have. Five: <code>find</code>, <code>index</code>, <code>describe</code>, <code>archive</code>, <code>diagnose</code>.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><b class="k">The version was hardcoded in two places and stale in both.</b> The MCP handshake had reported <code>0.1.0</code> since the beginning, and the diagnostics tool reported <code>0.9.5</code> for four releases — a report whose entire job is telling you which version you are running when something is wrong. Both now read <code>manifest.json</code>, and <code>pack.sh</code> refuses to build if a version literal reappears in <code>server/</code>.</li>
+</ul>
+<h2>0.9.8 — 2026-08-09</h2>
+<h3>Added</h3>
+<ul>
+<li><b class="k">The extension now carries its own icon.</b> Claude Desktop was generating a generic grey "Y" placeholder from the name, because the bundle shipped no icon at all — so the mark was invisible in the one place the product is actually seen. <code>icon.png</code> is now inside the bundle.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li><b class="k"><code>long_description</code> rewritten to lead with content search.</b> It described only inventory and location — where files live, which drive to fetch — and never mentioned that Claude describes your pictures so you can search by subject. That is the differentiator, and it was missing from the text a person reads while deciding whether to install.</li>
+<li>The install page now carries real screenshots of the warning dialog and the installed extension, replacing the CSS reproduction of the dialog.</li>
+</ul>
 <h2>0.9.7 — 2026-08-09</h2>
 <h3>Fixed</h3>
 <ul>
@@ -69,7 +88,7 @@ uninstall, install the new file, and restart Claude Desktop.</p>
 
 <hr>
 <p class="foot">Yellide is free and MIT-licensed. Nothing is uploaded and there is no account.<br>
-Current version <b class="ver">0.9.7</b> — extensions never update themselves, so check back here.</p>
+Current version <b class="ver">0.9.9</b> — extensions never update themselves, so check back here.</p>
 
 </div>
 </body>

@@ -16,6 +16,13 @@ if [ -f "$OUT" ] && unzip -p "$OUT" manifest.json 2>/dev/null | grep -q "\"versi
   exit 1
 fi
 
+# A hardcoded version literal in server/ reported 0.9.5 to diagnostics and 0.1.0 to the MCP
+# handshake for four releases. Both must come from manifest.json.
+if grep -nE "=\s*['\"][0-9]+\.[0-9]+\.[0-9]+['\"]" server/*.js; then
+  echo "refusing to build: hardcoded version literal above. Read it from manifest.json."
+  exit 1
+fi
+
 node --check server/index.js
 for f in server/*.js; do node --check "$f"; done
 if ! node test/exif.test.js >/dev/null 2>&1; then
@@ -26,7 +33,7 @@ fi
 echo "tests pass"
 
 rm -f "$OUT"
-zip -qr "$OUT" manifest.json server
+zip -qr "$OUT" manifest.json icon.png server
 echo "built $OUT  v$VERSION  ($(du -h "$OUT" | cut -f1))"
 
 # The site is the ONLY channel by which anyone learns a new version exists, so it must
