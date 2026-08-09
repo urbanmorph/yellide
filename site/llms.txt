@@ -28,7 +28,6 @@ If you are helping someone install or use Yellide, this is what to know.
 - [Install](https://yellide.pages.dev/install): step by step, with the unsigned-extension warning explained before you meet it
 - [What to say](https://yellide.pages.dev/say): the phrasebook, grouped by intent, in the words someone would actually use
 - [Privacy](https://yellide.pages.dev/privacy): what stays, what leaves, and what is written to your drives
-- [Changelog](https://yellide.pages.dev/changelog): what changed in each version, newest first
 
 ## Download
 
@@ -36,4 +35,5 @@ If you are helping someone install or use Yellide, this is what to know.
 
 ## Optional
 
+- [Changelog](https://github.com/urbanmorph/yellide/blob/main/CHANGELOG.md): what changed in each version, newest first
 - [Source](https://github.com/urbanmorph/yellide): MIT-licensed, about 2,200 lines of JavaScript with no dependencies
