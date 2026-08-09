@@ -632,6 +632,12 @@ function showPictures(db, ids, opts = {}) {
   if (!cap.ok) return { text: cap.reason };
 
   const list = (Array.isArray(ids) ? ids : [ids]).slice(0, 60);
+  // The agent has usually just LOOKED at these and holds descriptions that are not saved
+  // yet. Without them the sheet shows a UUID filename, which tells the user nothing about
+  // a photograph. Accept either a parallel array or an {id: label} map.
+  const labels = Array.isArray(opts.labels)
+    ? Object.fromEntries(list.map((id, i) => [String(id), opts.labels[i]]))
+    : (opts.labels && typeof opts.labels === 'object' ? opts.labels : {});
   const cards = [];
   let missing = 0;
   for (const id of list) {
@@ -642,8 +648,9 @@ function showPictures(db, ids, opts = {}) {
     const p = fullPath(best);
     const b64 = a.kind === 'video' ? vision.videoFrame(p) : vision.thumbnail(p);
     if (!b64) { missing++; continue; }
-    const cap2 = db.prepare(
+    const saved = db.prepare(
       "select value from annotation where asset_id=? and key='caption' order by rowid desc limit 1").get(id);
+    const cap2 = labels[String(id)] ? { value: labels[String(id)] } : saved;
     cards.push({ id, file: best.filename, dir: tilde(path.dirname(p)), path: p,
                  kind: a.kind, when: a.shot_at ? String(a.shot_at).slice(0, 10) : null,
                  caption: cap2 ? cap2.value : null, b64 });

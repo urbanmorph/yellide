@@ -340,6 +340,10 @@ const TOOLS = [
       + 'tell them you have opened it.',
     inputSchema: { type: 'object', properties: {
       ids: { type: 'array', items: { type: 'integer' }, description: 'Asset ids, up to 60.' },
+      labels: { type: 'array', items: { type: 'string' },
+        description: 'One short description per id, in the same order. If you have just looked at '
+          + 'these, PASS WHAT YOU SAW — otherwise the sheet shows only a filename, which for a photo '
+          + 'named 6E098553-3276.jpeg tells the user nothing.' },
       title: { type: 'string', description: 'Heading for the sheet, e.g. the query they asked.' } },
       required: ['ids'] } },
   { name: 'diagnostics', description:
@@ -491,7 +495,7 @@ function handle(req) {
         // Image blocks, not text — the agent has to actually see the picture.
         return send({ jsonrpc: '2.0', id, result: { content: T.look(db(), a.ids).blocks } });
       }
-      else if (n === 'show_pictures') out = T.showPictures(db(), a.ids, { title: a.title }).text;
+      else if (n === 'show_pictures') out = T.showPictures(db(), a.ids, { title: a.title, labels: a.labels }).text;
       else if (n === 'diagnostics')  out = T.diagnosticsReport(db(), { ...probeRuntime(), server_version: SERVER_VERSION }).text;
       else out = { error: 'unknown tool ' + n };
     } catch (e) { out = { error: String(e.message), stack: String(e.stack).split('\n').slice(0, 4) }; }

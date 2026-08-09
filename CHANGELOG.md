@@ -13,6 +13,13 @@ why this file exists.
 
 ## [0.9.13] — 2026-08-09
 
+### Added
+
+- **`show_pictures` takes labels.** The agent has usually just looked at the frames and is
+  holding descriptions that are not saved yet; without them the sheet shows only a
+  filename, and `6E098553-3276-4EB6-8E25-2C46C9F977D2.jpeg` tells a person nothing about a
+  photograph.
+
 ### Fixed
 
 - **`search` never returned asset ids**, so nothing could act on a result. Every other tool

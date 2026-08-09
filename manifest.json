@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "yellide",
   "display_name": "Yellide",
-  "version": "0.9.13",
+  "version": "0.9.14",
   "description": "Find what you shot. Indexes your video, audio and photos across every folder and drive, describes what is in them with your own AI, and keeps it searchable when the drive is unplugged.",
   "long_description": "ಎಲ್ಲಿದೆ — Kannada for “where is it?”\n\nYellide makes the media you have made searchable by WHAT IS IN IT, not only by what the files are called. It indexes wherever your media lives — internal disk, external drives, iCloud, Dropbox — and you never tell it a path. It finds your media itself and ranks the locations by how much is there.\n\nDates, cameras, lenses, places and durations are read straight out of the files in seconds. Then Claude looks at your pictures and writes down what it sees, and one description covers a whole shoot — so a few minutes of looking can make hundreds of files findable by subject. Ask for the cycling event, not for IMG_4471.MOV.\n\nEverything stays on your machine. It reads only metadata headers plus the first and last megabyte of each file (to identify it), never modifies, moves or renames anything, and makes no network calls. Cloud placeholder files are detected and skipped without being downloaded. ID cards and medical reports can be marked private: recorded by type only, never by content.\n\nOnce a drive is indexed it stays searchable after you unplug it — Yellide will tell you which drive to fetch. Deleting a file removes the bytes, not the knowledge: the entry stays, marked missing.\n\nAsk it: “what media files do I have on this Mac?” · “describe what is in my photos” · “find the cycling event” · “what did I shoot in March 2020?” · “open that one”.",
   "author": {
