@@ -28,5 +28,28 @@ echo "tests pass"
 rm -f "$OUT"
 zip -qr "$OUT" manifest.json server
 echo "built $OUT  v$VERSION  ($(du -h "$OUT" | cut -f1))"
+
+# The site is the ONLY channel by which anyone learns a new version exists, so it must
+# never lag the bundle. It did once: the site said 0.9.5 while 0.9.6 was shipping.
+cp "$OUT" site/yellide.mcpb
+python3 - "$VERSION" <<'PY'
+import pathlib, re, sys
+version = sys.argv[1]
+changed = []
+for f in pathlib.Path('site').glob('*.html'):
+    s = f.read_text()
+    new = re.sub(r'(<b class="ver">)[^<]*(</b>)', r'\g<1>' + version + r'\g<2>', s)
+    new = re.sub(r'(version\s{2,})\d+\.\d+\.\d+', r'\g<1>' + version, new)
+    if new != s:
+        f.write_text(new); changed.append(f.name)
+site = pathlib.Path('site/llms.txt')
+print('  stamped %s into: %s' % (version, ', '.join(changed) or '(nothing to change)'))
+stale = [f.name for f in pathlib.Path('site').glob('*.html')
+         if re.search(r'\d+\.\d+\.\d+', f.read_text()) and f.name != 'changelog.html'
+         and version not in f.read_text()]
+if stale:
+    print('  WARNING: a version number that is not %s survives in: %s' % (version, stale))
+PY
+echo "  site/yellide.mcpb updated — remember to add a changelog entry"
 echo
 echo "install: drag onto Claude Desktop, or Settings → Extensions → Advanced → Install Extension"

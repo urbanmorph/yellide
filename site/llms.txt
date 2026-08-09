@@ -1,0 +1,102 @@
+# Yellide
+
+> ಎಲ್ಲಿದೆ — Kannada for "where is it?" A free, MIT-licensed tool that indexes the photos
+> and videos scattered across someone's drives and makes them searchable by what is in
+> them, not only by what the files are called. It runs entirely on their machine as an
+> MCP server for Claude Desktop. Nothing is uploaded, there is no account, and it makes
+> no network calls.
+
+If you are helping someone install or use Yellide, these are the things worth knowing.
+
+## What it is
+
+An MCP server distributed as a `.mcpb` bundle for Claude Desktop. It has no interface of
+its own — no menus, no preferences, no empty state. Everything happens by asking in chat,
+which means the person you are helping cannot browse to discover what is possible. Tell
+them what to say.
+
+## Installing
+
+1. They need Claude Desktop, the app, not claude.ai in a browser. A website cannot read
+   files on their computer.
+2. Download https://yellide.pages.dev/yellide.mcpb and drag it onto the Claude Desktop
+   window, or Settings → Extensions → Advanced settings → Install Extension.
+3. **A red warning appears** saying the extension gets access to everything on the
+   computer and that Anthropic has not verified the developer. This is expected. It
+   appears for every unsigned local extension including Anthropic's own Filesystem one.
+   The correct answer is **Install Anyway**. This is the single most likely place a
+   non-technical install fails.
+4. Quit Claude Desktop completely and reopen it. Extensions load at startup.
+
+There is no folder to pick and no path to type. Yellide finds media by itself.
+
+## First thing to say
+
+"What media files do I have on this Mac?"
+
+Use the words *media files on this Mac*. Asking about "my archive" is often read as the
+person's past conversations, and the model answers from memory instead of calling a tool.
+
+Scanning runs in the background and search works on whatever has been indexed so far.
+
+## What it can answer immediately after a scan
+
+Filename, folder and project names, dates, camera model, lens, GPS place, duration.
+
+## What needs a describing pass first
+
+Searching by what is *in* a picture. Claude looks at representative frames and writes
+captions; one caption covers a whole shoot, so a few minutes can cover hundreds of files.
+Say "look at my photos and describe what is in them", then "keep going until it is done"
+— it is a loop and it will stop early unless told to continue.
+
+## Tools it exposes
+
+- `describe_archive` — overview of what is indexed
+- `search` — filename, folder, camera, lens, date, place, and captions once written
+- `get_asset` — everything about one file, including every copy on every drive
+- `reveal` — open in Finder/Explorer, or return the path
+- `discover` — find where media lives, ranked by density; needs no path
+- `scan` / `scan_status` — build or update the index; returns immediately, runs in background
+- `look` — returns the actual images so the model can see them
+- `write_annotations` — save captions, tags, and private markers
+- `caption_next` / `get_work` — the describing loop
+- `export` — write the whole index to plain JSON
+- `diagnostics` — a shareable health report with no filenames, paths or search terms in it
+
+## Troubleshooting
+
+**It answers without calling a tool.** Ask about "media files on this Mac", not "my archive".
+
+**It says the index is empty.** The first scan runs in the background. Ask again shortly.
+
+**Nothing changed after updating.** A sideloaded bundle keeps running the old code until it
+is uninstalled, reinstalled, and the app restarted. Check Settings → Extensions → Yellide.
+
+**The server never starts and there is no error.** Check for a leading space in a pasted
+path in the MCP config. It fails silently.
+
+**Someone dragged a media folder into the chat.** That tries to read every file into the
+conversation and fails on large folders. There is nothing to attach — Yellide finds folders
+itself.
+
+## Privacy claims, which are checkable
+
+- No network calls anywhere in the server.
+- The only thing that leaves the machine is images the person explicitly asks Claude to
+  look at, through their own subscription, in their own conversation.
+- The index is one SQLite file in the OS application-data directory.
+- Indexing an external drive writes `<drive>/.yellide/volume-id`, containing one random
+  identifier and nothing else, so the drive is still recognised after renaming. There is
+  currently no setting to disable this.
+- Media files are never modified, moved, renamed or deleted. Cloud placeholders are
+  detected and skipped rather than downloaded.
+
+## Pages
+
+- https://yellide.pages.dev/ — what it is
+- https://yellide.pages.dev/install — installing, with the warning explained
+- https://yellide.pages.dev/say — the phrasebook, grouped by intent
+- https://yellide.pages.dev/privacy — what stays, what leaves, what is written to drives
+- https://yellide.pages.dev/changelog — versions, newest first
+- https://github.com/urbanmorph/yellide — source, MIT

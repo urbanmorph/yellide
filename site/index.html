@@ -21,39 +21,31 @@
 <link rel="manifest" href="/site.webmanifest">
 <meta name="theme-color" content="#faf9f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
+<link rel="stylesheet" href="/style.css">
 <style>
-  :root{--bg:#faf9f7;--fg:#1a1a18;--dim:#6b6862;--rule:#e5e1da;--accent:#0d9488}
-  @media (prefers-color-scheme:dark){:root{--bg:#141413;--fg:#eeece7;--dim:#9a968e;--rule:#2c2a27;--accent:#2dd4bf}}
-  :root[data-theme=dark]{--bg:#141413;--fg:#eeece7;--dim:#9a968e;--rule:#2c2a27;--accent:#2dd4bf}
-  :root[data-theme=light]{--bg:#faf9f7;--fg:#1a1a18;--dim:#6b6862;--rule:#e5e1da;--accent:#0d9488}
-  *{box-sizing:border-box}
-  .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-  body{margin:0;background:var(--bg);color:var(--fg);
-       font:16px/1.65 ui-serif,Georgia,"Times New Roman",serif;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:44rem;margin:0 auto;padding:5rem 1.25rem 6rem}
-  .lock{margin:0 0 2.6rem}
-  .wm{display:block;height:4.6rem;width:auto}
-  @media (max-width:34rem){.wm{height:3.4rem}}
-  .kn{font-size:1.25em;line-height:1;font-style:normal}
+  .wrap{padding-top:5rem}
   .lede{font-size:2rem;line-height:1.25;letter-spacing:-.02em;margin:0;max-width:22ch}
   .tag{color:var(--dim);margin:1.1rem 0 0;font-size:1.02rem}
+  .kn{font-size:1.25em;line-height:1;font-style:normal}
   .cta{display:inline-block;margin:2.5rem 0 0;padding:.7rem 1.4rem;border:1px solid var(--fg);
        border-radius:999px;text-decoration:none;color:var(--fg);
        font:.95rem ui-sans-serif,system-ui,sans-serif}
   .cta:hover{background:var(--fg);color:var(--bg)}
   .cta small{color:inherit;opacity:.6;margin-left:.5rem}
-  h2{font-size:1.05rem;margin:4rem 0 1rem;letter-spacing:.02em;text-transform:uppercase;
-     font-family:ui-sans-serif,system-ui,sans-serif;color:var(--dim)}
   .ask{border-left:2px solid var(--accent);padding-left:1.1rem;margin:1.4rem 0}
   .ask p{margin:.2rem 0;font-style:italic}
   .ask span{display:block;font-style:normal;color:var(--dim);font-size:.92rem;margin:.15rem 0 .9rem}
-  ul{padding-left:1.1rem}
-  li{margin:.5rem 0}
-  a{color:inherit;text-decoration-color:var(--dim);text-underline-offset:3px}
-  hr{border:0;border-top:1px solid var(--rule);margin:4rem 0}
-  .foot{color:var(--dim);font-size:.9rem}
-  b.k{font-weight:600}
+  .more{font:.92rem ui-sans-serif,system-ui,sans-serif}
 </style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Yellide",
+ "applicationCategory":"MultimediaApplication","operatingSystem":"macOS",
+ "url":"https://yellide.pages.dev/","softwareVersion":"0.9.6",
+ "downloadUrl":"https://yellide.pages.dev/yellide.mcpb",
+ "license":"https://opensource.org/licenses/MIT","isAccessibleForFree":true,
+ "offers":{"@type":"Offer","price":"0","priceCurrency":"INR"},
+ "description":"A free, local tool that indexes the photos and videos scattered across your drives and makes them searchable by what is in them. Runs entirely on your machine as an MCP server for Claude Desktop. Nothing is uploaded."}
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -81,6 +73,7 @@
   <p>“Where did that clip go?”</p>
   <span>On KERALA_2023. That drive isn’t plugged in.</span>
 </div>
+<p class="more"><a href="/say">More things worth saying &rarr;</a></p>
 
 <h2>How it works</h2>
 <ul>
@@ -105,11 +98,10 @@
 </ul>
 
 <hr>
-<p class="foot">
-Free, MIT-licensed, and about 2,200 lines of plain JavaScript with no dependencies.<br>
-Built for one creative director who couldn’t find his own footage.<br>
-<a href="/install.html">Install</a> · <a href="https://github.com/urbanmorph/yellide">Source</a>
-</p>
+<p class="foot">Yellide is free and MIT-licensed. Nothing is uploaded and there is no account.<br>
+Current version <b class="ver">0.9.6</b> — extensions never update themselves, so check back here.</p>
+<nav class="foot"><a href="/" aria-current="page">Home</a><a href="/install">Install</a><a href="/say">What to say</a><a href="/privacy">Privacy</a><a href="/changelog">Changelog</a><a href="https://github.com/urbanmorph/yellide">Source</a></nav>
+
 
 </div>
 </body>

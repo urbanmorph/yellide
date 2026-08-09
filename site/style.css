@@ -1,0 +1,62 @@
+/* Yellide — shared across all five pages. Change a colour here, not in five files. */
+
+:root{
+  --bg:#faf9f7; --fg:#1a1a18; --dim:#6b6862; --rule:#e5e1da; --accent:#0d9488;
+  --warn:#8a2a1a; --warnbg:#fdf2ef; --ok:#1f6b3a;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#141413; --fg:#eeece7; --dim:#9a968e; --rule:#2c2a27; --accent:#2dd4bf;
+        --warn:#ff9b85; --warnbg:#2a1512; --ok:#7fd39b}
+}
+:root[data-theme=dark]{--bg:#141413; --fg:#eeece7; --dim:#9a968e; --rule:#2c2a27; --accent:#2dd4bf;
+                       --warn:#ff9b85; --warnbg:#2a1512; --ok:#7fd39b}
+:root[data-theme=light]{--bg:#faf9f7; --fg:#1a1a18; --dim:#6b6862; --rule:#e5e1da; --accent:#0d9488;
+                        --warn:#8a2a1a; --warnbg:#fdf2ef; --ok:#1f6b3a}
+
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--fg);
+     font:16px/1.65 ui-serif,Georgia,"Times New Roman",serif; -webkit-font-smoothing:antialiased}
+.wrap{max-width:44rem; margin:0 auto; padding:3.5rem 1.25rem 5rem}
+.vh{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+/* wordmark ------------------------------------------------------------- */
+.wm{display:block; height:1.7rem; width:auto}
+.lock{margin:0 0 2.6rem}
+.lock .wm{height:4.6rem}
+@media (max-width:34rem){.lock .wm{height:3.4rem}}
+a.home{display:inline-block; margin:0 0 2.5rem}
+
+/* type ----------------------------------------------------------------- */
+h1{font-size:2.1rem; line-height:1.15; margin:0 0 .4rem; letter-spacing:-.02em; font-weight:400}
+h2{font-size:1.05rem; margin:3rem 0 .9rem; letter-spacing:.02em; text-transform:uppercase;
+   font-family:ui-sans-serif,system-ui,sans-serif; color:var(--dim)}
+h3{font-size:1.05rem; margin:2rem 0 .5rem; font-weight:600}
+.sub{color:var(--dim); margin:0 0 2.5rem}
+p{margin:1rem 0}
+ul{padding-left:1.1rem} li{margin:.5rem 0}
+a{color:inherit; text-decoration-color:var(--dim); text-underline-offset:3px}
+a:hover{text-decoration-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:2px}
+hr{border:0; border-top:1px solid var(--rule); margin:3.5rem 0}
+b.k{font-weight:600}
+
+/* components ----------------------------------------------------------- */
+.note{border-left:2px solid var(--rule); padding:.1rem 0 .1rem 1rem; margin:.9rem 0;
+      color:var(--dim); font-size:.95rem}
+.say{border:1px solid var(--rule); border-radius:6px; padding:.9rem 1.2rem; margin:1rem 0}
+.say p{margin:.4rem 0; font-style:italic}
+.warn{background:var(--warnbg); border:1px solid color-mix(in srgb,var(--warn) 30%,transparent);
+      border-radius:6px; padding:1rem 1.15rem; margin:1rem 0}
+.warn b{color:var(--warn)}
+code{font:.9em ui-monospace,SFMono-Regular,Menlo,monospace; background:var(--rule);
+     padding:.12em .4em; border-radius:3px}
+pre{background:var(--rule); padding:.9rem 1rem; border-radius:6px; overflow-x:auto;
+    font:.85rem/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+pre code{background:none; padding:0}
+
+/* footer nav ----------------------------------------------------------- */
+.foot{color:var(--dim); font-size:.9rem; margin-top:0}
+nav.foot{margin:.8rem 0 0}
+nav.foot a{margin-right:.9rem; white-space:nowrap}
+nav.foot a[aria-current]{text-decoration-color:var(--accent); color:var(--fg)}
+.ver{font-family:ui-sans-serif,system-ui,sans-serif; font-size:.85rem}
