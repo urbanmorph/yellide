@@ -11,6 +11,25 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.12] — 2026-08-09
+
+### Added
+
+- **`show_pictures` — a contact sheet you can actually see.** Ask to see something and
+  Yellide now writes a self-contained HTML sheet of the real frames and opens it in your
+  browser: captioned, dated, with the folder shown, and every frame clickable to reveal it
+  in Finder.
+
+  This exists because of a failure that was invisible from the server side. `look` returns
+  MCP image blocks, and those go to the *model* — Claude Desktop feeds them to Claude and
+  renders nothing in the chat. So Claude, having genuinely seen twelve photographs, wrote
+  "shown above in three sets" and the person saw prose about pictures they could not see.
+  For a tool about footage, that is the central interaction failing while every log line
+  says success.
+
+- `look`'s description now states plainly that its images are not visible to the user, so
+  the model stops claiming otherwise and calls `show_pictures` instead.
+
 ## [0.9.11] — 2026-08-09
 
 ### Changed
@@ -110,6 +129,7 @@ The first version that does the whole job.
 - Private documents are labelled by type and never by content, and are redacted on export.
 - `export` writes the whole index to plain JSON, so nothing here is a one-way door.
 
+[0.9.12]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.12
 [0.9.11]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.11
 [0.9.10]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.10
 [0.9.9]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.9

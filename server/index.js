@@ -307,7 +307,7 @@ const TOOLS = [
       kind: { type: 'string', enum: ['image','video','audio'] }, limit: { type: 'number' } } } },
 
   { name: 'look', description:
-      'SHOW ME THE PICTURES. Returns the actual images so you can see them. This is how content questions ' +
+      'Returns the actual images SO THAT YOU CAN SEE THEM. The user cannot — these do not render in their chat. To show THEM, call show_pictures. This is how content questions ' +
       'get answered — "people walking", "a red car", "golden hour" — you look, then write what you saw with ' +
       'write_annotations, and it becomes searchable. Pass ids from get_work or search. Max 12 at a time.',
     inputSchema: { type: 'object', properties: {
@@ -331,6 +331,17 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: {
       kind: { type: 'string', enum: ['image','video'] }, limit: { type: 'number' } } } },
 
+  { name: 'show_pictures',
+    description:
+      'SHOW THE PICTURES TO THE USER. Opens a contact sheet of the actual frames in their browser, '
+      + 'captioned, clickable to reveal in Finder. Use this whenever they ask to SEE anything. '
+      + 'IMPORTANT: images returned by `look` go to you and are NOT visible to the user — Claude Desktop '
+      + 'does not render them in the chat. Never say "shown above" after `look`; call this instead, then '
+      + 'tell them you have opened it.',
+    inputSchema: { type: 'object', properties: {
+      ids: { type: 'array', items: { type: 'integer' }, description: 'Asset ids, up to 60.' },
+      title: { type: 'string', description: 'Heading for the sheet, e.g. the query they asked.' } },
+      required: ['ids'] } },
   { name: 'diagnostics', description:
       'A shareable health report for when something is wrong: version, platform, capabilities, counts, ' +
       'scan errors and a plain list of likely problems. Contains NO filenames, paths, captions or search ' +
@@ -480,6 +491,7 @@ function handle(req) {
         // Image blocks, not text — the agent has to actually see the picture.
         return send({ jsonrpc: '2.0', id, result: { content: T.look(db(), a.ids).blocks } });
       }
+      else if (n === 'show_pictures') out = T.showPictures(db(), a.ids, { title: a.title }).text;
       else if (n === 'diagnostics')  out = T.diagnosticsReport(db(), { ...probeRuntime(), server_version: SERVER_VERSION }).text;
       else out = { error: 'unknown tool ' + n };
     } catch (e) { out = { error: String(e.message), stack: String(e.stack).split('\n').slice(0, 4) }; }

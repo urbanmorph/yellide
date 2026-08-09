@@ -606,3 +606,91 @@ function diagnosticsReport(db, runtime) {
   return { text: L.join('\n') };
 }
 module.exports.diagnosticsReport = diagnosticsReport;
+
+// ---------------------------------------------------------------------------
+// showPictures — put the actual frames in front of the PERSON.
+//
+// `look` returns MCP image blocks, which go to the model and never reach the
+// human: Claude Desktop feeds them to the model and renders nothing in the
+// chat. The model then says "shown above" and the user sees prose about
+// photographs they cannot see. For a tool about footage that is the whole
+// interaction failing, so we write a contact sheet and open it.
+//
+// Self-contained HTML with the thumbnails inlined as data URIs — no server, no
+// network, nothing to clean up but one file.
+function showPictures(db, ids, opts = {}) {
+  const cap = vision.capability();
+  if (!cap.ok) return { text: cap.reason };
+
+  const list = (Array.isArray(ids) ? ids : [ids]).slice(0, 60);
+  const cards = [];
+  let missing = 0;
+  for (const id of list) {
+    const a = db.prepare('select id, kind, shot_at from asset where id = ?').get(id);
+    if (!a || (a.kind !== 'image' && a.kind !== 'video')) { missing++; continue; }
+    const { best } = locationsFor(db, id);
+    if (!best || best.state !== 'present') { missing++; continue; }
+    const p = fullPath(best);
+    const b64 = a.kind === 'video' ? vision.videoFrame(p) : vision.thumbnail(p);
+    if (!b64) { missing++; continue; }
+    const cap2 = db.prepare(
+      "select value from annotation where asset_id=? and key='caption' order by rowid desc limit 1").get(id);
+    cards.push({ id, file: best.filename, dir: tilde(path.dirname(p)), path: p,
+                 kind: a.kind, when: a.shot_at ? String(a.shot_at).slice(0, 10) : null,
+                 caption: cap2 ? cap2.value : null, b64 });
+  }
+  if (!cards.length) return { text: 'Nothing to show — none of those are on disk right now.' };
+
+  const esc = s => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const title = esc(opts.title || 'Yellide');
+  const html = `<!doctype html><meta charset="utf-8"><title>${title}</title>
+<style>
+:root{color-scheme:dark light}
+body{margin:0;background:#141413;color:#eeece7;
+     font:15px/1.5 ui-sans-serif,system-ui,-apple-system,sans-serif;padding:28px 22px 60px}
+h1{font:600 17px/1.3 ui-sans-serif,system-ui,sans-serif;margin:0 0 4px;letter-spacing:.01em}
+.sub{color:#9a968e;font-size:13px;margin:0 0 22px}
+.grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+figure{margin:0;background:#1c1c1a;border:1px solid #2c2a27;border-radius:8px;overflow:hidden}
+img{display:block;width:100%;height:190px;object-fit:cover;background:#000}
+figcaption{padding:9px 11px 11px}
+.cap{font-size:13.5px;line-height:1.45}
+.meta{color:#8a867e;font-size:11.5px;margin-top:5px;word-break:break-all;font-family:ui-monospace,Menlo,monospace}
+.vid::after{content:"video";position:relative;top:-26px;left:9px;background:#0d9488;color:#fff;
+            font-size:10px;padding:2px 6px;border-radius:3px}
+a{color:inherit;text-decoration:none}
+a:hover figure{border-color:#2dd4bf}
+</style>
+<h1>${title}</h1>
+<p class="sub">${cards.length} of ${list.length} shown${missing ? ` &middot; ${missing} not on disk` : ''}
+&middot; click any frame to reveal it in Finder</p>
+<div class="grid">
+${cards.map(c => `<a href="file://${encodeURI(c.path)}"><figure>
+<img src="data:image/jpeg;base64,${c.b64}" alt="${esc(c.caption || c.file)}"${c.kind === 'video' ? ' class="vid"' : ''}>
+<figcaption>${c.caption ? `<div class="cap">${esc(c.caption)}</div>` : ''}
+<div class="meta">${esc(c.file)}${c.when ? ' &middot; ' + c.when : ''}<br>${esc(c.dir)}</div>
+</figcaption></figure></a>`).join('\n')}
+</div>`;
+
+  const out = path.join(require('./storage.js').dataDir(), 'sheets');
+  try { fs.mkdirSync(out, { recursive: true }); } catch {}
+  const file = path.join(out, 'pictures.html');
+  fs.writeFileSync(file, html);
+  const cmd = process.platform === 'darwin' ? ['open', [file]]
+            : process.platform === 'win32' ? ['cmd', ['/c', 'start', '', file]]
+            : ['xdg-open', [file]];
+  let opened = true;
+  try { execFile(cmd[0], cmd[1], () => {}); } catch { opened = false; }
+
+  return {
+    text: `Opened a contact sheet with ${cards.length} picture${cards.length === 1 ? '' : 's'}`
+        + (missing ? ` (${missing} not on disk right now)` : '') + '.'
+        + (opened ? ' It should be in your browser now — click any frame to reveal it in Finder.'
+                  : ` Open this file yourself: ${file}`)
+        + `\n\nTell the user you have OPENED it, not that it is shown in this chat — pictures`
+        + ` returned to you are not visible to them.`,
+    file, shown: cards.length, missing,
+  };
+}
+module.exports.showPictures = showPictures;
