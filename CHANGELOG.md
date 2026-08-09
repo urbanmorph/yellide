@@ -11,6 +11,15 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.11] — 2026-08-09
+
+### Changed
+
+- **The extension icon fills its tile.** The glyph was sized at 64% of the tile because
+  that is what Android's maskable safe zone requires — but that constraint belongs to the
+  web manifest icons, not the bundle, and the two are separate files. It is 86% now, and
+  the tile ships square so Claude Desktop's own rounded mask is not applied twice.
+
 ## [0.9.10] — 2026-08-09
 
 ### Fixed
@@ -101,6 +110,7 @@ The first version that does the whole job.
 - Private documents are labelled by type and never by content, and are redacted on export.
 - `export` writes the whole index to plain JSON, so nothing here is a one-way door.
 
+[0.9.11]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.11
 [0.9.10]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.10
 [0.9.9]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.9
 [0.9.8]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.8
