@@ -61,6 +61,13 @@ pre{background:var(--rule); padding:.9rem 1rem; border-radius:6px; overflow-x:au
     font:.85rem/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
 pre code{background:none; padding:0}
 
+/* a screenshot of the product working ---------------------------------- */
+.shot{margin:2rem 0 1.4rem; border:1px solid var(--rule); border-radius:8px; overflow:hidden}
+.shot img{display:block; width:100%; height:auto}
+.shot figcaption{font:.88rem/1.5 ui-sans-serif,system-ui,sans-serif; color:var(--dim);
+                 padding:.7rem .9rem; border-top:1px solid var(--rule)}
+.shot figcaption code{font-size:.92em}
+
 /* colophon ------------------------------------------------------------- */
 .foot{color:var(--dim); font-size:.9rem; margin-top:0}
 .ver{font-family:ui-sans-serif,system-ui,sans-serif; font-size:.85rem}
