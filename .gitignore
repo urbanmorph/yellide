@@ -22,6 +22,11 @@ build/
 # Tangential exploration / research / scratch — never committed (repo discipline)
 supporting-docs/
 
+# Local agent instructions. Kept out of the repo deliberately: it is working notes
+# for whoever is driving Claude Code here, not documentation for contributors.
+# Note it remains readable in history prior to the commit that untracked it.
+CLAUDE.md
+
 # Built bundle. The copy served by the website IS tracked — without it a fresh
 # clone deploys a site whose download button 404s.
 *.mcpb

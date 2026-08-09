@@ -70,8 +70,11 @@ server/           the whole product, ~2,200 lines, no dependencies
   tools.js        the thirteen tools' implementations
   worker.js       scanning off the stdio thread
 test/             node test/exif.test.js
-scripts/pack.sh   build the .mcpb; refuses to build without a version bump
-site/             the website, hand-written static HTML on Cloudflare Pages
+scripts/
+  pack.sh         build the .mcpb; refuses to build without a version bump
+  build-changelog.py   generates site/changelog.html from CHANGELOG.md
+site/             five hand-written static pages on Cloudflare Pages
+CHANGELOG.md      canonical version history
 ```
 
 ## Development
@@ -108,17 +111,13 @@ bundle, quit Claude Desktop with Cmd-Q, reopen.
 
 ## Repo discipline
 
-**Markdown does not live in this repo**, with three exceptions: this file, `CLAUDE.md` and
-`CHANGELOG.md`. Design documents, plans and research go in `supporting-docs/`, which is
-gitignored, and are mirrored to a shared doc. This keeps exploratory writing out of the
-diff.
+**Markdown does not live in this repo**, with two exceptions: this file and `CHANGELOG.md`.
+Design documents, plans and research go in `supporting-docs/`, and local agent instructions
+in `CLAUDE.md` — both gitignored. This keeps exploratory writing and working notes out of
+the diff.
 
 `CHANGELOG.md` is canonical; `site/changelog.html` is generated from it by
 `scripts/build-changelog.py`. Edit the markdown, never the HTML.
-
-> ⚠️ **`CLAUDE.md` is currently stale.** It describes an earlier hosted, multiplayer design
-> that was abandoned, and states that nothing is built. Treat it as history until it is
-> rewritten.
 
 ## Contributing
 
