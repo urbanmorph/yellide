@@ -54,9 +54,11 @@ pixel, no cookie. A download page that phones home would contradict the entire p
 <p>Two things, and only two.</p>
 <h3>The index itself</h3>
 <p>A single SQLite file in the normal place for application data on your system:</p>
-<pre><code>macOS    ~/Library/Application Support/yellide/catalog.db
-Windows  %APPDATA%\yellide\catalog.db
-Linux    ~/.local/share/yellide/catalog.db</code></pre>
+<div class="log">
+<div class="row"><div class="k">macOS</div><div class="v"><code>~/Library/Application Support/yellide/catalog.db</code></div></div>
+<div class="row"><div class="k">Windows</div><div class="v"><code>%APPDATA%\yellide\catalog.db</code></div></div>
+<div class="row"><div class="k">Linux</div><div class="v"><code>~/.local/share/yellide/catalog.db</code></div></div>
+</div>
 <p>Delete that file and Yellide has forgotten everything. Nothing else is left behind.</p>
 <h3>A marker on each drive you index</h3>
 <p>When Yellide indexes an external drive it writes one small file to it:</p>
@@ -73,12 +75,11 @@ gap and it is being fixed rather than explained away.</p>
 </div>
 
 <h2>What Yellide never does to your files</h2>
-<ul>
-<li>It never modifies, moves, renames or deletes any photo, video or audio file.</li>
-<li>It never downloads your cloud files. iCloud and Dropbox placeholders are detected and
-    stepped over, not pulled down.</li>
-<li>It reads metadata headers, plus the first and last megabyte of each file to identify it.</li>
-</ul>
+<div class="log plain">
+<div class="row"><div class="k">Never writes to a media file</div><div class="v">It does not modify, move, rename or delete any photo, video or audio file.</div></div>
+<div class="row"><div class="k">Never downloads your cloud files</div><div class="v">iCloud and Dropbox placeholders are detected and stepped over, not pulled down.</div></div>
+<div class="row"><div class="k">Reads only what identifies a file</div><div class="v">Metadata headers, plus the first and last megabyte.</div></div>
+</div>
 
 <h2>Private documents</h2>
 <p>Anything you mark private is recorded by type only — <em>identity document</em>,

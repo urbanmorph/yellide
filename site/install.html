@@ -22,19 +22,6 @@
 <meta name="theme-color" content="#faf9f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
 <link rel="stylesheet" href="/style.css">
-<style>
-  ol{padding-left:0;list-style:none;counter-reset:s}
-  ol>li{counter-increment:s;position:relative;padding-left:2.6rem;margin:0 0 2rem}
-  ol>li::before{content:counter(s);position:absolute;left:0;top:.1rem;width:1.7rem;height:1.7rem;
-    border:1px solid var(--rule);border-radius:50%;display:grid;place-items:center;
-    font:600 .8rem/1 ui-sans-serif,system-ui,sans-serif;color:var(--dim)}
-  figure{margin:1.1rem 0;border:1px solid var(--rule);border-radius:6px;overflow:hidden;background:var(--bg)}
-  figure img{display:block;width:100%;height:auto}
-  figcaption{font:.85rem/1.5 ui-sans-serif,system-ui,sans-serif;color:var(--dim);
-             padding:.6rem .85rem;border-top:1px solid var(--rule)}
-  .btn-ghost{border:1px solid var(--rule);color:var(--dim)}
-  .btn-solid{background:var(--fg);color:var(--bg);font-weight:600}
-</style>
 </head>
 <body>
 <div class="wrap">
@@ -161,33 +148,14 @@ update already happened. <b>Nothing changes until you click Update.</b></p></div
 did not apply.</p>
 
 <h2>If something goes wrong</h2>
-
-<p>The full phrasebook is at <a href="/say">what to say</a>.</p>
-
-<p><b>It answers from memory instead of looking.</b> Ask
-<em>“what media files do I have on this Mac?”</em> rather than “what’s in my archive” — the
-word <em>archive</em> can be read as your past conversations.</p>
-
-<p><b>It says the index is empty.</b> The first scan runs in the background. Ask again in a
-minute; searching works on whatever has been indexed so far.</p>
-
-<p><b>Do not drag a media folder into the chat window.</b> That tries to read every file into
-the conversation and will fail on a large folder. Yellide finds your folders itself — there is
-nothing to attach.</p>
-
-<p class="note">Check the version at <b>Settings → Extensions → Yellide</b>. Extensions never
-update themselves — to upgrade you must uninstall, install the new file, and restart the app.</p>
-
-<figure>
-  <img src="/img/installed.png" width="1350" height="666"
-       alt="Settings, Extensions, Yellide: the extension panel with an Uninstall button, an Enabled
-            toggle and a Configure button.">
-  <figcaption>Installed. <b>Uninstall</b> is top right &mdash; you will need it to upgrade, because a
-  sideloaded extension keeps running the old code until you reinstall and restart.</figcaption>
-</figure>
-
-<p><b>You updated but nothing changed.</b> A sideloaded extension keeps running the old code
-until you uninstall, reinstall, and restart the app. Check the version number on that screen.</p>
+<div class="log plain">
+<div class="row"><div class="k">It answers from memory instead of looking</div><div class="v">Ask <em>&ldquo;what media files do I have on this Mac?&rdquo;</em> rather than &ldquo;what&rsquo;s in my archive&rdquo; &mdash; the word <em>archive</em> can be read as your past conversations.</div></div>
+<div class="row"><div class="k">It says the index is empty</div><div class="v">The first scan runs in the background. Ask again in a minute; searching works on whatever has been indexed so far.</div></div>
+<div class="row"><div class="k">You updated but nothing changed</div><div class="v">A sideloaded extension keeps running the old code until you uninstall, reinstall and restart the app. Check the version at <b class="k">Settings &rarr; Extensions &rarr; Yellide</b>.</div></div>
+<div class="row"><div class="k">It asks permission constantly</div><div class="v">Every tool defaults to <em>Needs approval</em>. See the setting above.</div></div>
+<div class="row"><div class="k">The server never starts, and nothing reports an error</div><div class="v">Check for a leading space in a pasted path in the MCP config. It fails completely silently. It cost us an hour.</div></div>
+<div class="row"><div class="k">You dragged a media folder into the chat</div><div class="v">That tries to read every file into the conversation and will fail on a large folder. Yellide finds your folders itself &mdash; there is nothing to attach.</div></div>
+</div>
 
 <h2>Still stuck?</h2>
 
@@ -230,13 +198,10 @@ never starts. It cost us an hour.</p>
 
 <p>What you get depends on one thing: <b class="k">whether your AI can see pictures.</b></p>
 
-<table>
-<tr><th>Works with any client</th><td>Filenames, folders, project names, dates, cameras,
-lenses, places, durations, and drives that are not plugged in. All thirteen tools.</td></tr>
-<tr><th>Needs an AI that sees</th><td>Searching by <em>what is in the picture</em>. Yellide
-hands the actual images back and your AI writes down what it sees. A text-only model
-receives pictures it cannot look at, so nothing gets described.</td></tr>
-</table>
+<div class="log plain">
+<div class="row"><div class="k">Works with any MCP client</div><div class="v">Filenames, folders, project names, dates, cameras, lenses, places, durations, and drives that are not plugged in. All thirteen tools.</div></div>
+<div class="row"><div class="k">Needs an AI that can see</div><div class="v">Searching by <em>what is in the picture</em>. Yellide hands the actual images back and your AI writes down what it sees. A text-only model receives pictures it cannot look at, so nothing gets described.</div></div>
+</div>
 
 <p>In practice: <b class="k">ChatGPT and Codex</b> use models that can see, so both halves
 should work &mdash; though a capable client sometimes prefers its own file search over
