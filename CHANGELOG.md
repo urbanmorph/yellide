@@ -11,6 +11,21 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.10] — 2026-08-09
+
+### Fixed
+
+- **The downloaded file now carries its version in the name** — `yellide-0.9.10.mcpb`
+  rather than `yellide.mcpb`. A stale bundle sitting in Downloads or on the Desktop is
+  otherwise indistinguishable from a fresh one, and since sideloaded extensions never
+  auto-update, installing the old file silently reinstalls old code. This cost us an
+  evening: an icon fix looked broken for three builds because the file being dragged in
+  was four releases behind.
+- The bundle is served with `Cache-Control: no-cache`, so a re-download is never the
+  browser's cached copy.
+- `icon.png` is now 8-bit rather than 16-bit, matching every extension that renders
+  correctly.
+
 ## [0.9.9] — 2026-08-09
 
 ### Added
@@ -86,6 +101,7 @@ The first version that does the whole job.
 - Private documents are labelled by type and never by content, and are redacted on export.
 - `export` writes the whole index to plain JSON, so nothing here is a one-way door.
 
+[0.9.10]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.10
 [0.9.9]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.9
 [0.9.8]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.8
 [0.9.7]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.7

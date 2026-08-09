@@ -47,6 +47,7 @@ for f in pathlib.Path('site').glob('*.html'):
     s = f.read_text()
     new = re.sub(r'(<b class="ver">)[^<]*(</b>)', r'\g<1>' + version + r'\g<2>', s)
     new = re.sub(r'(version\s{2,})\d+\.\d+\.\d+', r'\g<1>' + version, new)
+    new = re.sub(r'download="yellide-[\d.]+\.mcpb"', 'download="yellide-' + version + '.mcpb"', new)
     if new != s:
         f.write_text(new); changed.append(f.name)
 site = pathlib.Path('site/llms.txt')

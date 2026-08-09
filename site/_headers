@@ -1,0 +1,5 @@
+# The bundle must never be served from cache: a stale copy is indistinguishable from a
+# fresh one once it is sitting in Downloads, and sideloaded extensions do not auto-update.
+/yellide.mcpb
+  Cache-Control: no-cache, must-revalidate
+  Content-Type: application/octet-stream
