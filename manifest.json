@@ -1,0 +1,97 @@
+{
+  "manifest_version": "0.3",
+  "name": "yellide",
+  "display_name": "Yellide",
+  "version": "0.9.5",
+  "description": "Find what you shot. Indexes your video, audio and photos across every folder and drive, describes what is in them with your own AI, and keeps it searchable when the drive is unplugged.",
+  "long_description": "\u0c8e\u0cb2\u0ccd\u0cb2\u0cbf\u0ca6\u0cc6 \u2014 Kannada for \u201cwhere is it?\u201d\n\nYellide builds a searchable index of the media you have made, wherever it lives: internal disk, external drives, iCloud, Dropbox. You never tell it a path \u2014 it finds your media itself and ranks the locations by how much is there.\n\nEverything stays on your machine. It reads only metadata headers plus the first and last megabyte of each file (to identify it), never modifies, moves or renames anything, and makes no network calls. Cloud placeholder files are detected and skipped without being downloaded.\n\nOnce a drive is indexed it stays searchable after you unplug it \u2014 Yellide will tell you which drive to fetch. Deleting a file removes the bytes, not the knowledge: the entry stays, marked missing.\n\nAsk it: \u201cwhat media can you find?\u201d \u00b7 \u201cindex everything\u201d \u00b7 \u201cwhat did I shoot in March 2020?\u201d \u00b7 \u201copen that one\u201d.",
+  "author": {
+    "name": "urbanmorph"
+  },
+  "license": "MIT",
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/index.js",
+        "${user_config.restrict_to_folders}"
+      ]
+    }
+  },
+  "tools": [
+    {
+      "name": "describe_archive",
+      "description": "The photo, video and audio files on this computer and its drives \u2014 not past conversations. Call first for any question about them."
+    },
+    {
+      "name": "search",
+      "description": "Search filenames, folders, cameras, dates and tags. Does not yet match image or audio content."
+    },
+    {
+      "name": "get_asset",
+      "description": "Everything known about one file, and every copy of it."
+    },
+    {
+      "name": "reveal",
+      "description": "Open it in Finder, or say which drive to fetch."
+    },
+    {
+      "name": "discover",
+      "description": "Find where the media lives. No path needed."
+    },
+    {
+      "name": "scan",
+      "description": "Build or update the index in the background. No path needed."
+    },
+    {
+      "name": "scan_status",
+      "description": "Progress of a running scan."
+    },
+    {
+      "name": "export",
+      "description": "Write the whole index to plain JSON."
+    },
+    {
+      "name": "diagnostics",
+      "description": "Runtime and index health."
+    },
+    {
+      "name": "get_work",
+      "description": "Shoot representatives that still need a caption."
+    },
+    {
+      "name": "look",
+      "description": "Show the actual pictures so they can be described."
+    },
+    {
+      "name": "write_annotations",
+      "description": "Save captions and tags; searchable immediately."
+    },
+    {
+      "name": "caption_next",
+      "description": "The captioning loop: next undescribed shoots plus their pictures, in one call."
+    }
+  ],
+  "user_config": {
+    "restrict_to_folders": {
+      "type": "directory",
+      "title": "Optional \u2014 limit Yellide to specific folders",
+      "description": "Leave this empty. Yellide finds your media by itself and you never need to know a path. Only set it if you want to restrict it to particular folders. Never drag a media folder into the chat window \u2014 that tries to read every file into the conversation.",
+      "multiple": true,
+      "required": false,
+      "default": []
+    }
+  },
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": [
+      "darwin",
+      "win32"
+    ],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}

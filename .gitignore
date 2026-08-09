@@ -21,3 +21,6 @@ build/
 
 # Tangential exploration / research / scratch — never committed (repo discipline)
 supporting-docs/
+
+# Built bundle
+*.mcpb
