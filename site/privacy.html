@@ -81,6 +81,39 @@ gap and it is being fixed rather than explained away.</p>
 <div class="row"><div class="k">Reads only what identifies a file</div><div class="v">Metadata headers, plus the first and last megabyte.</div></div>
 </div>
 
+<h2>Why deleting your work is not something it can do</h2>
+
+<p>Automated tools have destroyed people&rsquo;s archives. A sentence on a page promising
+otherwise is worth nothing, so here is the whole list instead. <b class="k">These are every
+write and every delete the software performs</b> &mdash; there are no others:</p>
+
+<div class="log">
+<div class="row"><div class="k"><code>catalog.db</code></div><div class="v">The index, in your system&rsquo;s application-data folder. Delete it and Yellide has forgotten everything.</div></div>
+<div class="row"><div class="k"><code>&lt;drive&gt;/.yellide/volume-id</code></div><div class="v">One random identifier on each drive you index, so a renamed drive is still recognised.</div></div>
+<div class="row"><div class="k"><code>os.tmpdir()/yl-&lt;pid&gt;-*</code></div><div class="v">A thumbnail while it is being made, deleted immediately afterwards. Named with this process&rsquo;s own id.</div></div>
+<div class="row"><div class="k"><code>&hellip;/sheets/pictures.html</code></div><div class="v">The contact sheet, when you ask to see pictures.</div></div>
+<div class="row"><div class="k">the file you name</div><div class="v">Only when you ask for an export.</div></div>
+</div>
+
+<p><b class="k">Every delete targets a path Yellide built itself</b> in the temporary folder,
+with its own process id in the name. Not one of them can name a file of yours. There is no
+code path that removes, renames or overwrites a photo, a video or any file you made.</p>
+
+<p>External programs &mdash; only <code>sips</code> and <code>qlmanage</code>, both built into
+macOS, plus <code>open</code> to reveal a file &mdash; are run with an argument list, never a
+shell command. A filename containing <code>; rm -rf ~</code> is a filename, not an
+instruction. Nothing in Yellide evaluates a string as code.</p>
+
+<p>None of that is a promise you have to take. <a href="https://github.com/urbanmorph/yellide/blob/main/test/safety.test.js">A
+test enforces it</a>: every write above is listed there with its reason, and if a future
+version adds one that is not on the list, the build stops and no bundle is produced. The
+list on this page and the list in that test are the same list.</p>
+
+<div class="note">What this cannot protect you from: Yellide runs beside whatever else you
+have installed. It cannot stop another extension, or any other tool, from deleting your
+files. Keep backups &mdash; of anything irreplaceable, in a second place, that no software on
+your machine can reach.</div>
+
 <h2>Private documents</h2>
 <p>Anything you mark private is recorded by type only — <em>identity document</em>,
 <em>medical report</em> — never by its contents, and never with a description. Mark one copy and

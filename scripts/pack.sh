@@ -25,12 +25,16 @@ fi
 
 node --check server/index.js
 for f in server/*.js; do node --check "$f"; done
-if ! node test/exif.test.js >/dev/null 2>&1; then
-  echo "TESTS FAILED — not building. Run: node test/exif.test.js"
-  node test/exif.test.js 2>&1 | tail -5
-  exit 1
-fi
+for t in test/*.test.js; do
+  if ! node "$t" >/dev/null 2>&1; then
+    echo "TESTS FAILED — not building. Run: node $t"
+    node "$t" 2>&1 | tail -20
+    exit 1
+  fi
+done
 echo "tests pass"
+# Print the safety audit on every build, so nobody ships without reading it.
+node test/safety.test.js
 
 rm -f "$OUT"
 zip -qr "$OUT" manifest.json icon.png server
