@@ -1,7 +1,7 @@
 # kannada.woff2
 
 Noto Sans Kannada, subset to the seven codepoints in ಎಲ್ಲಿದೆ and instanced to a single
-weight — 2.1 KB from a 450 KB variable font. Layout features are kept, without which the
+weight, 2.1 KB from a 450 KB variable font. Layout features are kept, without which the
 ಲ್ಲ conjunct does not form.
 
 It is here because the brand's own name would otherwise render in whatever Kannada font the

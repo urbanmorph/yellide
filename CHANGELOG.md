@@ -11,7 +11,18 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
-## [0.9.13] — 2026-08-09
+## [0.9.15] 2026-08-10
+
+### Changed
+
+- **No em-dashes in anything a person reads.** Every tool description, every line of output
+  Yellide writes into a chat, the whole website, the extension listing, the README and this
+  file. 170 of them, replaced by whichever punctuation the sentence actually wanted rather
+  than one blanket substitution: a colon where the dash was glossing a name, a full stop
+  where it was starting a second clause, a comma everywhere else. Code comments keep theirs,
+  since they are for whoever is reading the source.
+
+## [0.9.13], 2026-08-09
 
 ### Added
 
@@ -22,28 +33,27 @@ why this file exists.
 
 ### Fixed
 
-- **`search` never returned asset ids**, so nothing could act on a result. Every other tool
-  — `show_pictures`, `reveal`, `get_asset` — is keyed by id, and the text is all the agent
+- **`search` never returned asset ids**, so nothing could act on a result. Every other tool, `show_pictures`, `reveal`, `get_asset`, is keyed by id, and the text is all the agent
   actually receives. Asked to show 245 cycling matches, Claude could only display five,
   because it had paths and needed ids. It diagnosed this itself and said so in the reply,
   which is the only reason it surfaced: the search worked, the answer was accurate, and the
   gap was invisible from every log.
 
-  Each hit now reads `1. [id 402] filename — …`, and the result ends with the full id list.
+  Each hit now reads `1. [id 402] filename, …`, and the result ends with the full id list.
 
 - `search`'s structured data set `filename` to the camera model. Now the filename.
 
-## [0.9.12] — 2026-08-09
+## [0.9.12], 2026-08-09
 
 ### Added
 
-- **`show_pictures` — a contact sheet you can actually see.** Ask to see something and
+- **`show_pictures`, a contact sheet you can actually see.** Ask to see something and
   Yellide now writes a self-contained HTML sheet of the real frames and opens it in your
   browser: captioned, dated, with the folder shown, and every frame clickable to reveal it
   in Finder.
 
   This exists because of a failure that was invisible from the server side. `look` returns
-  MCP image blocks, and those go to the *model* — Claude Desktop feeds them to Claude and
+  MCP image blocks, and those go to the *model*. Claude Desktop feeds them to Claude and
   renders nothing in the chat. So Claude, having genuinely seen twelve photographs, wrote
   "shown above in three sets" and the person saw prose about pictures they could not see.
   For a tool about footage, that is the central interaction failing while every log line
@@ -52,20 +62,20 @@ why this file exists.
 - `look`'s description now states plainly that its images are not visible to the user, so
   the model stops claiming otherwise and calls `show_pictures` instead.
 
-## [0.9.11] — 2026-08-09
+## [0.9.11], 2026-08-09
 
 ### Changed
 
 - **The extension icon fills its tile.** The glyph was sized at 64% of the tile because
-  that is what Android's maskable safe zone requires — but that constraint belongs to the
+  that is what Android's maskable safe zone requires, but that constraint belongs to the
   web manifest icons, not the bundle, and the two are separate files. It is 86% now, and
   the tile ships square so Claude Desktop's own rounded mask is not applied twice.
 
-## [0.9.10] — 2026-08-09
+## [0.9.10], 2026-08-09
 
 ### Fixed
 
-- **The downloaded file now carries its version in the name** — `yellide-0.9.10.mcpb`
+- **The downloaded file now carries its version in the name**, `yellide-0.9.10.mcpb`
   rather than `yellide.mcpb`. A stale bundle sitting in Downloads or on the Desktop is
   otherwise indistinguishable from a fresh one, and since sideloaded extensions never
   auto-update, installing the old file silently reinstalls old code. This cost us an
@@ -76,42 +86,41 @@ why this file exists.
 - `icon.png` is now 8-bit rather than 16-bit, matching every extension that renders
   correctly.
 
-## [0.9.9] — 2026-08-09
+## [0.9.9], 2026-08-09
 
 ### Added
 
 - **Slash commands.** Yellide now exposes MCP prompts, which Claude Desktop lists under
-  `/`. MCP has no wake word — the model decides when to call a tool from its description —
-  so this is the nearest thing to a front door, and the only browsable surface a product
+  `/`. MCP has no wake word, the model decides when to call a tool from its description, so this is the nearest thing to a front door, and the only browsable surface a product
   with no interface can have. Five: `find`, `index`, `describe`, `archive`, `diagnose`.
 
 ### Fixed
 
 - **The version was hardcoded in two places and stale in both.** The MCP handshake had
   reported `0.1.0` since the beginning, and the diagnostics tool reported `0.9.5` for four
-  releases — a report whose entire job is telling you which version you are running when
+  releases, a report whose entire job is telling you which version you are running when
   something is wrong. Both now read `manifest.json`, and `pack.sh` refuses to build if a
   version literal reappears in `server/`.
 
-## [0.9.8] — 2026-08-09
+## [0.9.8], 2026-08-09
 
 ### Added
 
 - **The extension now carries its own icon.** Claude Desktop was generating a generic grey
-  "Y" placeholder from the name, because the bundle shipped no icon at all — so the mark was
+  "Y" placeholder from the name, because the bundle shipped no icon at all, so the mark was
   invisible in the one place the product is actually seen. `icon.png` is now inside the
   bundle.
 
 ### Changed
 
 - **`long_description` rewritten to lead with content search.** It described only inventory
-  and location — where files live, which drive to fetch — and never mentioned that Claude
+  and location, where files live, which drive to fetch, and never mentioned that Claude
   describes your pictures so you can search by subject. That is the differentiator, and it
   was missing from the text a person reads while deciding whether to install.
 - The install page now carries real screenshots of the warning dialog and the installed
   extension, replacing the CSS reproduction of the dialog.
 
-## [0.9.7] — 2026-08-09
+## [0.9.7], 2026-08-09
 
 ### Fixed
 
@@ -123,7 +132,7 @@ why this file exists.
 - The bundle served by the website was gitignored by `*.mcpb`, so a fresh clone would
   deploy a site whose download button 404s. `site/yellide.mcpb` is now tracked.
 
-## [0.9.6] — 2026-08-09
+## [0.9.6], 2026-08-09
 
 ### Added
 
@@ -133,13 +142,13 @@ why this file exists.
   wrong.
 - Its own identity: the wordmark, and the website.
 
-## [0.9.5] — 2026-08-09
+## [0.9.5], 2026-08-09
 
 The first version that does the whole job.
 
 ### Added
 
-- **Finds your media by itself.** No folder pickers and no paths — not knowing where
+- **Finds your media by itself.** No folder pickers and no paths, not knowing where
   everything is *is* the problem it exists to solve.
 - **Search by what is in the picture**, not only by what the file is called. Your own AI
   describes a shoot once and the description covers every file in it.
@@ -151,6 +160,7 @@ The first version that does the whole job.
 - Private documents are labelled by type and never by content, and are redacted on export.
 - `export` writes the whole index to plain JSON, so nothing here is a one-way door.
 
+[0.9.15]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.15
 [0.9.13]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.13
 [0.9.12]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.12
 [0.9.11]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.11

@@ -72,4 +72,4 @@ fs.writeFileSync(tmp, buildJpegWithGps({ latRef: 'S', lonRef: 'W' }));
 const s = exif.extractImage(tmp); fs.unlinkSync(tmp);
 assert.ok(s.gps_lat < 0 && s.gps_lon < 0, 'S/W must be negative, got ' + s.gps_lat + ',' + s.gps_lon);
 
-console.log('PASS — GPS, hemisphere signs, camera and dimensions all verified');
+console.log('PASS: GPS, hemisphere signs, camera and dimensions all verified');

@@ -68,7 +68,7 @@ function describeArchive(db) {
   L.push(`Coverage  date ${cov.date_pct}% · camera ${cov.cam_pct}% · GPS ${cov.gps_pct}%`);
   const missing = states.find(s => s.state === 'missing')?.n || 0;
   const ph = states.find(s => s.state === 'dematerialised')?.n || 0;
-  if (missing) L.push(`Missing   ${missing.toLocaleString()} files are indexed but no longer on disk — I still know what they were and where they lived`);
+  if (missing) L.push(`Missing   ${missing.toLocaleString()} files are indexed but no longer on disk. I still know what they were and where they lived`);
   if (ph) L.push(`Cloud     Separately, ${ph.toLocaleString()} MORE files exist only as iCloud/Dropbox placeholders and ` +
                  `are NOT part of the ${a.files.toLocaleString()} above. They were deliberately never opened, ` +
                  `because reading one downloads it. Everything counted above is a real local file`);
@@ -88,13 +88,13 @@ function describeArchive(db) {
     `\nEND YOUR REPLY WITH EXACTLY THIS OFFER, in your own words but keeping the numbers: ` +
     `"${pg.pct}% of your photos and videos can be searched by content. I can raise that to about ` +
     `${Math.min(99, pg.pct + Math.round(100 * pg.next_3_batches_cover / pg.files_total))}% in a few minutes ` +
-    `— shall I?" If they agree, call caption_next and then write_annotations for EVERY picture you are ` +
+    `, shall I?" If they agree, call caption_next and then write_annotations for EVERY picture you are ` +
     `shown, looping until coverage stops rising meaningfully. Describing a picture without calling ` +
-    `write_annotations wastes the work entirely — the description is lost the moment this chat ends. ` +
+    `write_annotations wastes the work entirely, the description is lost the moment this chat ends. ` +
     `Do not quote shoot counts; ${pg.singletons_left.toLocaleString()} remaining shoots are single files.`);
   else if (undone > 0) L.push(
     `\nNOTE: ${pg.pct}% of images and videos are described, and the remaining ${undone.toLocaleString()} ` +
-    `shoots average only ${pg.avg_remaining} files each — the next three batches would cover just ` +
+    `shoots average only ${pg.avg_remaining} files each, the next three batches would cover just ` +
     `${pg.next_3_batches_cover} files. **Tell the user the useful work is done** and that further ` +
     `captioning is low value unless they want a specific folder covered. Do not start another pass ` +
     `unasked.`);
@@ -109,7 +109,7 @@ function search(db, query, opts = {}) {
   // "Nothing matched" on an empty index is a lie by omission — it reads as "you don't have
   // that", when the truth is "I haven't looked yet".
   if (!db.prepare('select count(*) n from asset').get().n)
-    return { text: 'The index has not been built yet, so there is nothing to search. Run a scan first — ' +
+    return { text: 'The index has not been built yet, so there is nothing to search. Run a scan first, ' +
                    'it finds your media by itself and takes a few minutes. Search works on whatever is ' +
                    'indexed while it runs.', empty_index: true, data: [] };
   const limit = Math.min(opts.limit || 20, 100);
@@ -182,14 +182,14 @@ function search(db, query, opts = {}) {
       const shown = look(db, work.data.map(w => w.id));
       const covered = work.data.reduce((n, w) => n + (w.cluster_size || 1), 0);
       return {
-        text: `Nothing matched "${query}" — but that is because most of this archive has never been ` +
+        text: `Nothing matched "${query}", but that is because most of this archive has never been ` +
               `described, so there are no words to match against.`,
         blocks: [
           { type: 'text', text:
-            `Nothing matched "${query}".\n\nThat is not a "you don't have it" — it is a "nobody has ever ` +
+            `Nothing matched "${query}".\n\nThat is not a "you don't have it". It is a "nobody has ever ` +
             `written down what is in these". Here are ${work.data.length} shoots that have never been ` +
             `described, covering about ${covered} files. Look at them, then call write_annotations with a ` +
-            `caption for each and propagate:true. Then run the same search again — it will work.` },
+            `caption for each and propagate:true. Then run the same search again. It will work.` },
           ...shown.blocks,
         ],
         data: [], needs_captions: true };
@@ -209,7 +209,7 @@ function search(db, query, opts = {}) {
     // The id has to be IN THE TEXT. Every other tool — show_pictures, reveal, get_asset —
     // is keyed by id, and the text is all the agent actually receives. Without it, search
     // is a dead end: it can describe a hit but nothing can act on it.
-    return `${i + 1}. [id ${r.id}] ${best?.filename || '(unknown)'} — ${bits.join(' · ')}${state}\n` +
+    return `${i + 1}. [id ${r.id}] ${best?.filename || '(unknown)'}, ${bits.join(' · ')}${state}\n` +
            `   ${tilde(fullPath(best))}${extra}`;
   });
 
@@ -260,7 +260,7 @@ function reveal(db, id, mode = 'open') {
   const p = fullPath(best);
   if (best.state !== 'present') {
     const vol = db.prepare('select v.label from location l join volume v on v.id=l.volume_id where l.id=?').get(best.id);
-    return { text: `Not available right now — it was last seen at ${tilde(p)}` +
+    return { text: `Not available right now. It was last seen at ${tilde(p)}` +
       (vol?.label ? ` on the drive "${vol.label}"` : '') +
       `. ${best.state === 'missing' ? 'The file is no longer there.' : 'That drive is not mounted.'}`,
       path: p, state: best.state };
@@ -302,9 +302,9 @@ function exportIndex(db, outPath, opts = {}) {
   doc.redacted_private = redacted;
   fs.writeFileSync(out, JSON.stringify(doc, null, 1));
   return { text: `Exported ${assets.length.toLocaleString()} assets to ${tilde(out)}\n` +
-    `Plain JSON — no part of it needs Yellide to read. This is your escape hatch.` +
+    `Plain JSON, no part of it needs Yellide to read. This is your escape hatch.` +
     (redacted ? `\n${redacted} item${redacted === 1 ? '' : 's'} marked private were reduced to ` +
-                `"private document" — their descriptions stay on this machine only.` : ''), path: out };
+                `"private document", their descriptions stay on this machine only.` : ''), path: out };
 }
 
 module.exports = { describeArchive, search, getAsset, reveal, exportIndex, locationsFor, fullPath };
@@ -364,10 +364,10 @@ function captionNext(db, opts = {}) {
     { type: 'text', text:
       `Here are ${work.data.length} shoots nobody has looked at, covering about ${covered} files.\n\n` +
       `For EACH picture: describe it, then call write_annotations with {id, caption, tags, propagate:true}. ` +
-      `**A description you only write in your reply is thrown away** — nothing is saved unless ` +
+      `**A description you only write in your reply is thrown away**. Nothing is saved unless ` +
       `write_annotations is called. The caption then covers that whole shoot. Then call caption_next again.\n` +
       `Progress: ${pg.files_described.toLocaleString()} of ${pg.files_total.toLocaleString()} files ` +
-      `(${pg.pct}%) are described. Report percentages, never shoot counts — most remaining shoots are ` +
+      `(${pg.pct}%) are described. Report percentages, never shoot counts, most remaining shoots are ` +
       `single files, so a shoot count wildly overstates what is left.` },
     ...shown.blocks,
   ], remaining_files: pg.files_left };
@@ -419,7 +419,7 @@ function getWork(db, opts = {}) {
     .filter(g => !g.done)
     .sort((a, b) => b.is_shot - a.is_shot || b.size - a.size)
     .slice(0, limit);
-  if (!shoots.length) return { text: 'Nothing left to look at — every shoot already has a description.', data: [] };
+  if (!shoots.length) return { text: 'Nothing left to look at, every shoot already has a description.', data: [] };
   const rows = shoots.map(g => ({ ...g.rep, cluster_size: g.size,
                                   day: (g.rep.shot_at_local || g.rep.shot_at || '').slice(0, 10) }));
   const lines = rows.map(r =>
@@ -443,18 +443,18 @@ function look(db, ids) {
     if (!best || best.state !== 'present') { blocks.push({ type: 'text', text: `id ${id}: not on disk right now.` }); skipped++; continue; }
     const b64 = a.kind === 'video' ? vision.videoFrame(fullPath(best)) : vision.thumbnail(fullPath(best));
     if (!b64) { skipped++; continue; }
-    blocks.push({ type: 'text', text: `id ${id} — ${best.filename}` });
+    blocks.push({ type: 'text', text: `id ${id}, ${best.filename}` });
     blocks.push({ type: 'image', data: b64, mimeType: 'image/jpeg' });
     shown++;
   }
   blocks.push({ type: 'text', text: `${shown} shown${skipped ? `, ${skipped} skipped` : ''}. ` +
-    `Describe what you actually see — subjects, action, setting, light. Then call write_annotations ` +
+    `Describe what you actually see, subjects, action, setting, light. Then call write_annotations ` +
     `with one caption per id. Say only what is visible; do not guess names, places or events.\n\n` +
-    `PRIVACY — this matters, personal archives contain more than photographs. If an image is a ` +
+    `PRIVACY. This matters, personal archives contain more than photographs. If an image is a ` +
     `document, ID card, bank record, cheque, contract, prescription or screenshot of private data: ` +
     `describe only its TYPE (e.g. "scanned bank document", "identity card") and set private:true. ` +
     `Never transcribe account numbers, addresses, phone numbers, names from documents, or any ` +
-    `identifying detail — the index is searchable and exportable, and anything written here can leave ` +
+    `identifying detail, the index is searchable and exportable, and anything written here can leave ` +
     `the machine with it.` });
   return { blocks };
 }
@@ -519,9 +519,9 @@ function writeAnnotations(db, items) {
     `. These are searchable now.` +
     (pg.files_left
       ? `\n\n${pg.files_described.toLocaleString()} of ${pg.files_total.toLocaleString()} files ` +
-        `(${pg.pct}%) are now described. Call caption_next for the next batch and keep going — do not stop ` +
+        `(${pg.pct}%) are now described. Call caption_next for the next batch and keep going, do not stop ` +
         `to ask between batches, and do not summarise each one. Report percentages, never shoot counts.`
-      : `\n\nThat was the last one — everything is described.`) };
+      : `\n\nThat was the last one. Everything is described.`) };
 }
 
 // Rebuild one FTS row so a new caption is findable the moment it is written.
@@ -573,7 +573,7 @@ function diagnosticsReport(db, runtime) {
   add('platform', (runtime && runtime.platform) || (process.platform + ' ' + process.arch));
   add('bundled runtime', runtime && runtime.bundled_by_electron ? 'yes (host app)' : 'no (system node)');
   add('schema version', q('select max(v) n from schema_version'));
-  add('can view pictures', cap.ok ? 'yes — ' + cap.via : 'NO — ' + (cap.reason || '').slice(0, 60));
+  add('can view pictures', cap.ok ? 'yes, ' + cap.via : 'NO, ' + (cap.reason || '').slice(0, 60));
   add('can view video', cap.video || 'no');
   L.push('');
   add('assets indexed', q('select count(*) n from asset').toLocaleString());
@@ -606,9 +606,9 @@ function diagnosticsReport(db, runtime) {
 
   // The most useful single signal: is anything obviously wrong?
   const problems = [];
-  if (!q('select count(*) n from asset')) problems.push('Nothing indexed — the scan has not run or found nothing.');
+  if (!q('select count(*) n from asset')) problems.push('Nothing indexed, the scan has not run or found nothing.');
   if (!cap.ok) problems.push('Cannot view pictures on this platform, so content descriptions are unavailable.');
-  if (q("select count(*) n from scan_job where state='failed'")) problems.push('At least one scan failed — see errors above.');
+  if (q("select count(*) n from scan_job where state='failed'")) problems.push('At least one scan failed, see errors above.');
   L.push('');
   L.push(problems.length ? 'LIKELY PROBLEMS:\n  - ' + problems.join('\n  - ')
                          : 'No obvious problems detected.');
@@ -655,7 +655,7 @@ function showPictures(db, ids, opts = {}) {
                  kind: a.kind, when: a.shot_at ? String(a.shot_at).slice(0, 10) : null,
                  caption: cap2 ? cap2.value : null, b64 });
   }
-  if (!cards.length) return { text: 'Nothing to show — none of those are on disk right now.' };
+  if (!cards.length) return { text: 'Nothing to show, none of those are on disk right now.' };
 
   const esc = s => String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -702,9 +702,9 @@ ${cards.map(c => `<a href="file://${encodeURI(c.path)}"><figure>
   return {
     text: `Opened a contact sheet with ${cards.length} picture${cards.length === 1 ? '' : 's'}`
         + (missing ? ` (${missing} not on disk right now)` : '') + '.'
-        + (opened ? ' It should be in your browser now — click any frame to reveal it in Finder.'
+        + (opened ? ' It should be in your browser now, click any frame to reveal it in Finder.'
                   : ` Open this file yourself: ${file}`)
-        + `\n\nTell the user you have OPENED it, not that it is shown in this chat — pictures`
+        + `\n\nTell the user you have OPENED it, not that it is shown in this chat, pictures`
         + ` returned to you are not visible to them.`,
     file, shown: cards.length, missing,
   };

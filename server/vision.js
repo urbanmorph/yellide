@@ -29,7 +29,7 @@ function capability() {
   return { ok: false, via: null,
     reason: `Looking at pictures needs an image resizer, and ${process.platform} has no guaranteed one. ` +
             `macOS uses the built-in sips. Elsewhere this arrives with ffmpeg. ` +
-            `Everything else — search, dates, cameras, drives — works normally.` };
+            `Everything else, search, dates, cameras, drives, works normally.` };
 }
 
 // Returns a small JPEG as base64, or null. Never throws: a picture that will not open is

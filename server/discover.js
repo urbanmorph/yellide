@@ -75,7 +75,7 @@ function discoverFast(opts = {}) {
   out.sort((a, b) => b.media_files - a.media_files);
   return { mode: 'fast', depth: maxDepth, elapsed_ms: Date.now() - t0, budget_hit: truncated,
            locations: out,
-           note: 'Shallow sweep. Counts marked at_least:true are floors — the deep pass refines them.' };
+           note: 'Shallow sweep. Counts marked at_least:true are floors, the deep pass refines them.' };
 }
 
 // Full depth, for when the real numbers matter.

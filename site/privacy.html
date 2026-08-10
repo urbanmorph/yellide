@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Yellide privacy — what stays, what leaves, what is written</title>
+<title>Yellide privacy: what stays, what leaves, what is written</title>
 <meta name="description" content="Yellide makes no network calls. Here is exactly what is written to your drives, what leaves your computer, and what is collected: nothing.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Yellide">
-<meta property="og:title" content="Yellide privacy — what stays, what leaves, what is written">
+<meta property="og:title" content="Yellide privacy: what stays, what leaves, what is written">
 <meta property="og:description" content="Yellide makes no network calls. Here is exactly what is written to your drives, what leaves your computer, and what is collected: nothing.">
 <meta property="og:url" content="https://yellide.pages.dev/privacy">
 <meta property="og:image" content="https://yellide.pages.dev/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Yellide — where is what I shot?">
+<meta property="og:image:alt" content="Yellide: where is what I shot?">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
@@ -42,12 +42,12 @@ account, no licence check and no update ping. You can confirm this yourself: the
 about 2,200 lines of JavaScript and it imports no networking library.</p>
 <p>The one time anything leaves your machine is when <em>you</em> ask Claude to look at your
 pictures so it can describe them. Those images go to your own AI provider, through your own
-subscription, in your own conversation — the same path as any image you paste into a chat
+subscription, in your own conversation, the same path as any image you paste into a chat
 yourself. Yellide is not in the middle of it and never sees it.</p>
 <p>If you never ask for descriptions, nothing ever leaves.</p>
 
 <h2>What we collect</h2>
-<p><b class="k">Nothing.</b> There are no analytics on this website either — no counter, no
+<p><b class="k">Nothing.</b> There are no analytics on this website either, no counter, no
 pixel, no cookie. A download page that phones home would contradict the entire product.</p>
 
 <h2>What gets written to your drives</h2>
@@ -63,14 +63,14 @@ pixel, no cookie. A download page that phones home would contradict the entire p
 <h3>A marker on each drive you index</h3>
 <p>When Yellide indexes an external drive it writes one small file to it:</p>
 <pre><code>&lt;drive&gt;/.yellide/volume-id</code></pre>
-<p>It contains a single random identifier and nothing else — no filenames, no descriptions, no
+<p>It contains a single random identifier and nothing else, no filenames, no descriptions, no
 information about you. It exists so that Yellide still recognises the drive after you rename it,
 which is how it can tell you <em>&ldquo;that clip is on KERALA_2023, and that drive is not
 plugged in.&rdquo;</em></p>
 <div class="warn">
 <p style="margin:0"><b>There is currently no setting to turn this off.</b> The code has a switch
 for it, but nothing exposes it to you yet. If you do not want it, index only your internal disk
-for now — the marker is written to mounted volumes, never to your home folder. This is a real
+for now, the marker is written to mounted volumes, never to your home folder. This is a real
 gap and it is being fixed rather than explained away.</p>
 </div>
 
@@ -85,7 +85,7 @@ gap and it is being fixed rather than explained away.</p>
 
 <p>Automated tools have destroyed people&rsquo;s archives. A sentence on a page promising
 otherwise is worth nothing, so here is the whole list instead. <b class="k">These are every
-write and every delete the software performs</b> &mdash; there are no others:</p>
+write and every delete the software performs</b>. There are no others:</p>
 
 <div class="log">
 <div class="row"><div class="k"><code>catalog.db</code></div><div class="v">The index, in your system&rsquo;s application-data folder. Delete it and Yellide has forgotten everything.</div></div>
@@ -99,8 +99,8 @@ write and every delete the software performs</b> &mdash; there are no others:</p
 with its own process id in the name. Not one of them can name a file of yours. There is no
 code path that removes, renames or overwrites a photo, a video or any file you made.</p>
 
-<p>External programs &mdash; only <code>sips</code> and <code>qlmanage</code>, both built into
-macOS, plus <code>open</code> to reveal a file &mdash; are run with an argument list, never a
+<p>External programs, only <code>sips</code> and <code>qlmanage</code>, both built into
+macOS, plus <code>open</code> to reveal a file, are run with an argument list, never a
 shell command. A filename containing <code>; rm -rf ~</code> is a filename, not an
 instruction. Nothing in Yellide evaluates a string as code.</p>
 
@@ -111,12 +111,12 @@ list on this page and the list in that test are the same list.</p>
 
 <div class="note">What this cannot protect you from: Yellide runs beside whatever else you
 have installed. It cannot stop another extension, or any other tool, from deleting your
-files. Keep backups &mdash; of anything irreplaceable, in a second place, that no software on
+files. Keep backups, of anything irreplaceable, in a second place, that no software on
 your machine can reach.</div>
 
 <h2>Private documents</h2>
-<p>Anything you mark private is recorded by type only — <em>identity document</em>,
-<em>medical report</em> — never by its contents, and never with a description. Mark one copy and
+<p>Anything you mark private is recorded by type only, <em>identity document</em>,
+<em>medical report</em>, never by its contents, and never with a description. Mark one copy and
 every identical copy is marked, wherever else it sits on your drives. Exports reduce private
 items to a bare label.</p>
 
@@ -129,7 +129,7 @@ which is why it is the licence.</p>
 
 <hr>
 <p class="foot">Yellide is free and MIT-licensed. Nothing is uploaded and there is no account.<br>
-Current version <b class="ver">0.9.14</b> — extensions never update themselves, so check back here. <a href="https://github.com/urbanmorph/yellide/blob/main/CHANGELOG.md">What changed</a></p>
+Current version <b class="ver">0.9.15</b>. Extensions never update themselves, so check back here. <a href="https://github.com/urbanmorph/yellide/blob/main/CHANGELOG.md">What changed</a></p>
 
 </div>
 </body>

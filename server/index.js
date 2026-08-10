@@ -95,7 +95,7 @@ function backlogNote(d) {
       group by substr(coalesce(a.shot_at_local,a.shot_at),1,10), a.camera)`).get().n;
     if (!n) return '';
     return `\n\n${n} shoot${n === 1 ? '' : 's'} have no description yet, so searching by what is *in* a ` +
-           `picture will not find them. Offer to look through them — call get_work, then look, then ` +
+           `picture will not find them. Offer to look through them, call get_work, then look, then ` +
            `write_annotations with propagate:true. A dozen looks can describe thousands of files.`;
   } catch { return ''; }
 }
@@ -108,7 +108,7 @@ function scanStatus(jobId) {
     job: j.id, state: j.state,
     found: j.found, indexed: j.indexed, skipped_unchanged_or_placeholder: j.skipped,
     percent: pct, started_at: j.started_at, finished_at: j.finished_at, error: j.error,
-    hint: j.state === 'running' ? 'Still going — ask again in a moment. Search already works on what is indexed.' : undefined,
+    hint: j.state === 'running' ? 'Still going. Ask again in a moment. Search already works on what is indexed.' : undefined,
   };
 }
 
@@ -152,7 +152,7 @@ function probeScan(dir, limit) {
   return {
     started: true, job: jobId, locations: roots.length,
     scanning: roots.map(r => r.replace(os.homedir(), '~')),
-    note: 'Running in the background — this returned immediately. Ask for status with the job id. Search works on whatever is already indexed.',
+    note: 'Running in the background. This returned immediately. Ask for status with the job id. Search works on whatever is already indexed.',
   };
 }
 
@@ -228,13 +228,13 @@ function probeDiscover(opts = {}) {
 
   return {
     verdict: found.length
-      ? `CAN DISCOVER WITHOUT A GRANT — found media in ${found.length} location(s) with no path supplied`
-      : 'NO MEDIA FOUND — either nothing here, or reads are blocked',
+      ? `CAN DISCOVER WITHOUT A GRANT, found media in ${found.length} location(s) with no path supplied`
+      : 'NO MEDIA FOUND, either nothing here, or reads are blocked',
     method: 'enumerated every top-level folder in home plus every mounted volume, then ranked by media density. No folder names are assumed.',
     scan_budget_hit: truncated,
     locations_with_media: found,
     elapsed_ms: Date.now() - t0,
-    note: 'Counts marked capped:true are lower bounds — the sampler stopped early. A macOS permission dialog during this run is TCC asking on Claude Desktop\'s behalf; allowing once covers every future scan.',
+    note: 'Counts marked capped:true are lower bounds, the sampler stopped early. A macOS permission dialog during this run is TCC asking on Claude Desktop\'s behalf; allowing once covers every future scan.',
   };
 }
 
@@ -249,7 +249,7 @@ const TOOLS = [
       'The user\'s own photo, video and audio FILES ON THIS COMPUTER and on their drives. ALWAYS CALL ' +
       'THIS FIRST for anything like "what is in my archive", "what do I have", "find my …", "where is ' +
       'that clip", "what did I shoot in …". Note that "archive", "library" and "collection" here mean ' +
-      'their MEDIA FILES, not past conversations — if there is any doubt, call this tool and find out ' +
+      'their MEDIA FILES, not past conversations, if there is any doubt, call this tool and find out ' +
       'rather than answering from memory. ' +
       'Returns counts, date range, cameras, drives and coverage, and tells you whether the index has been ' +
       'built yet. Do not browse the filesystem for the user\'s media: this index already knows where it all ' +
@@ -259,7 +259,7 @@ const TOOLS = [
   { name: 'search', description:
       'Search the user\'s indexed media. MATCHES ON: filename, folder and project names, camera model, lens, ' +
       'date, file kind, GPS presence, and any tags the user has added. ' +
-      'DOES NOT YET MATCH IMAGE OR AUDIO CONTENT — it cannot find "people walking", "a red car" or "sunset" ' +
+      'DOES NOT YET MATCH IMAGE OR AUDIO CONTENT. It cannot find "people walking", "a red car" or "sunset" ' +
       'unless those words appear in a filename, folder or tag. If the user asks about content, say so plainly ' +
       'and offer what this can do instead: narrow by date, camera, location or folder, then look at the ' +
       'results together.',
@@ -277,18 +277,18 @@ const TOOLS = [
 
   { name: 'reveal', description:
       'Show the user a file: opens it in Finder/Explorer, or returns the path. If it lives on a drive that ' +
-      'is not plugged in, this says which drive to fetch — that is a useful answer, not a failure.',
+      'is not plugged in, this says which drive to fetch. That is a useful answer, not a failure.',
     inputSchema: { type: 'object', properties: { id: { type: 'number' },
       mode: { type: 'string', enum: ['open','copy'] } }, required: ['id'] } },
 
   { name: 'discover', description:
       'Find WHERE the user\'s media lives, ranked by how much is in each place. Needs no path and asks the ' +
-      'user nothing — never ask them which folder, they do not know, that is the problem this solves. ' +
+      'user nothing, never ask them which folder, they do not know, that is the problem this solves. ' +
       'Fast by default; deep:true gives exact counts.',
     inputSchema: { type: 'object', properties: { deep: { type: 'boolean' } } } },
 
   { name: 'scan', description:
-      'Build or update the index. Needs no path — it finds everything itself. Returns IMMEDIATELY with a job ' +
+      'Build or update the index. Needs no path. It finds everything itself. Returns IMMEDIATELY with a job ' +
       'id and runs in the background, so never wait on it. Call this when describe_archive reports an empty ' +
       'index, or when the user has added new footage. Re-scans are near-instant: unchanged files are skipped.',
     inputSchema: { type: 'object', properties: { path: { type: 'string' }, limit: { type: 'number' } } } },
@@ -301,21 +301,21 @@ const TOOLS = [
 
   { name: 'get_work', description:
       'What still needs a human or agent eye: one representative per shoot that has no caption yet, ' +
-      'biggest shoots first. Use this to caption efficiently — a caption on a representative can be ' +
+      'biggest shoots first. Use this to caption efficiently, a caption on a representative can be ' +
       'propagated to its whole shoot, so a dozen looks can label thousands of files.',
     inputSchema: { type: 'object', properties: {
       kind: { type: 'string', enum: ['image','video','audio'] }, limit: { type: 'number' } } } },
 
   { name: 'look', description:
-      'Returns the actual images SO THAT YOU CAN SEE THEM. The user cannot — these do not render in their chat. To show THEM, call show_pictures. This is how content questions ' +
-      'get answered — "people walking", "a red car", "golden hour" — you look, then write what you saw with ' +
+      'Returns the actual images SO THAT YOU CAN SEE THEM. The user cannot, these do not render in their chat. To show THEM, call show_pictures. This is how content questions ' +
+      'get answered, "people walking", "a red car", "golden hour". You look, then write what you saw with ' +
       'write_annotations, and it becomes searchable. Pass ids from get_work or search. Max 12 at a time.',
     inputSchema: { type: 'object', properties: {
       ids: { type: 'array', items: { type: 'number' } } }, required: ['ids'] } },
 
   { name: 'write_annotations', description:
       'Save what you saw. One entry per id: {id, caption, tags?, propagate?}. Set propagate:true to give the ' +
-      'same caption to every other file from that shoot (same day, same camera) — that is how a dozen looks ' +
+      'same caption to every other file from that shoot (same day, same camera). That is how a dozen looks ' +
       'label thousands of files. Captions are searchable the instant they are written. ' +
       'Describe only what is visible; never invent names, places or events.',
     inputSchema: { type: 'object', properties: { items: { type: 'array', items: { type: 'object', properties: {
@@ -326,7 +326,7 @@ const TOOLS = [
   { name: 'caption_next', description:
       'THE CAPTIONING LOOP. Returns the next batch of undescribed shoots together with their pictures, in ' +
       'one call. Describe each, call write_annotations with propagate:true, then call this again. Repeat ' +
-      'until it reports everything described. This is how a whole archive becomes searchable by content — ' +
+      'until it reports everything described. This is how a whole archive becomes searchable by content, ' +
       'and each caption covers a whole shoot, so a few dozen batches can describe thousands of files.',
     inputSchema: { type: 'object', properties: {
       kind: { type: 'string', enum: ['image','video'] }, limit: { type: 'number' } } } },
@@ -335,14 +335,14 @@ const TOOLS = [
     description:
       'SHOW THE PICTURES TO THE USER. Opens a contact sheet of the actual frames in their browser, '
       + 'captioned, clickable to reveal in Finder. Use this whenever they ask to SEE anything. '
-      + 'IMPORTANT: images returned by `look` go to you and are NOT visible to the user — Claude Desktop '
+      + 'IMPORTANT: images returned by `look` go to you and are NOT visible to the user. Claude Desktop '
       + 'does not render them in the chat. Never say "shown above" after `look`; call this instead, then '
       + 'tell them you have opened it.',
     inputSchema: { type: 'object', properties: {
       ids: { type: 'array', items: { type: 'integer' }, description: 'Asset ids, up to 60.' },
       labels: { type: 'array', items: { type: 'string' },
         description: 'One short description per id, in the same order. If you have just looked at '
-          + 'these, PASS WHAT YOU SAW — otherwise the sheet shows only a filename, which for a photo '
+          + 'these, PASS WHAT YOU SAW, otherwise the sheet shows only a filename, which for a photo '
           + 'named 6E098553-3276.jpeg tells the user nothing.' },
       title: { type: 'string', description: 'Heading for the sheet, e.g. the query they asked.' } },
       required: ['ids'] } },
@@ -360,7 +360,7 @@ const TOOLS = [
 const PROMPTS = [
   { name: 'find',
     title: 'Yellide: find something',
-    description: 'Search your photos and videos — by what is in them, not just the filename.',
+    description: 'Search your photos and videos, by what is in them, not just the filename.',
     arguments: [{ name: 'what', description: 'e.g. the cycling event, drone shots from Kerala, March 2020', required: false }],
     build: a => `Use Yellide to find ${a.what ? `"${a.what}"` : 'something in my media'} in my photos and videos on this Mac. `
       + `Search captions and tags as well as filenames, folders, dates, camera and place. `
@@ -370,7 +370,7 @@ const PROMPTS = [
     title: 'Yellide: index my media',
     description: 'Find every photo and video on this Mac and build the searchable index.',
     arguments: [],
-    build: () => `Use Yellide to find the media files on this Mac and index them. Do not ask me for a path — `
+    build: () => `Use Yellide to find the media files on this Mac and index them. Do not ask me for a path, `
       + `Yellide finds them itself. Start the scan, then keep checking progress and keep going until it is `
       + `finished. Tell me what you found: how many files, across which places, and the date range.` },
 
@@ -379,7 +379,7 @@ const PROMPTS = [
     description: 'Look at the pictures and write down what is in them, so you can search by subject.',
     arguments: [],
     build: () => `Use Yellide's captioning loop to make my archive searchable by subject. Call caption_next, `
-      + `look at the pictures it returns, and save what you see with write_annotations — one description per `
+      + `look at the pictures it returns, and save what you see with write_annotations, one description per `
       + `shoot, propagated. Mark anything that looks like an identity document, medical report or legal paper `
       + `as private, by type only and never by content. Keep looping until there is nothing left to describe, `
       + `and report progress as you go. Do not stop after one batch.` },
@@ -468,8 +468,8 @@ function handle(req) {
       const autoNote = auto
         ? (auto.reason === 'first-run'
             ? `\n\nI had not looked at this machine yet, so I have just started indexing ${auto.roots} places in the background. `
-              + `Answers will fill in as it runs — ask again in a moment.`
-            : `\n\n(Refreshing the index in the background — new files will appear shortly.)`)
+              + `Answers will fill in as it runs. Ask again in a moment.`
+            : `\n\n(Refreshing the index in the background, new files will appear shortly.)`)
         : '';
       if (n === 'describe_archive') out = asText(T.describeArchive(db())) + autoNote;
       else if (n === 'search') {
