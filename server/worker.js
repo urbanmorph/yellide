@@ -13,7 +13,7 @@ const { parentPort, workerData } = require('worker_threads');
 const core = require('./core.js');
 const storage = require('./storage.js');
 
-const { jobId, roots, dbPath, cap } = workerData;
+const { jobId, roots, dbPath, cap, writeMarker } = workerData;
 const db = storage.open(dbPath);
 
 const setJob = db.prepare(`update scan_job set state=?, found=?, indexed=?, skipped=?,
@@ -28,7 +28,7 @@ try {
     const t0 = Date.now();
     let r;
     try {
-      r = core.scan(db, root, { cap, onProgress: p => {
+      r = core.scan(db, root, { cap, writeMarker, onProgress: p => {
         progress.run(found + p.indexed, indexed + p.indexed, skipped + p.unchanged + p.placeholders, jobId);
         parentPort?.postMessage({ type: 'progress', root, indexed: indexed + p.indexed });
       }});

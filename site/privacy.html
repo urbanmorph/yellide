@@ -67,12 +67,19 @@ pixel, no cookie. A download page that phones home would contradict the entire p
 information about you. It exists so that Yellide still recognises the drive after you rename it,
 which is how it can tell you <em>&ldquo;that clip is on KERALA_2023, and that drive is not
 plugged in.&rdquo;</em></p>
-<div class="warn">
-<p style="margin:0"><b>There is currently no setting to turn this off.</b> The code has a switch
-for it, but nothing exposes it to you yet. If you do not want it, index only your internal disk
-for now, the marker is written to mounted volumes, never to your home folder. This is a real
-gap and it is being fixed rather than explained away.</p>
-</div>
+<p>You can turn it off. In Claude Desktop: <b class="k">Settings &rarr; Extensions &rarr;
+Yellide &rarr; Configure</b>, then <b class="k">Never write anything to my drives</b>. In any
+other MCP client, set <code>YELLIDE_NO_DRIVE_MARKER=1</code> in the server&rsquo;s environment.</p>
+
+<p>Indexing and searching work exactly the same with it on. The only thing you lose is that
+after you rename a drive, Yellide can no longer tell it is the same one, so it cannot say
+<em>&ldquo;that clip is on KERALA_2023&rdquo;</em> about a drive you have since renamed.</p>
+
+<div class="note">This page said for a day that the switch existed in the code but was not
+exposed, and that it was being fixed. That was a promise on a page, which is the thing this
+page exists to avoid. It is wired up now, and
+<a href="https://github.com/urbanmorph/yellide/blob/main/test/safety.test.js">the test</a>
+fails the build if the refusal ever stops reaching the code that does the writing.</div>
 
 <h2>What Yellide never does to your files</h2>
 <div class="log plain">
@@ -129,7 +136,7 @@ which is why it is the licence.</p>
 
 <hr>
 <p class="foot">Yellide is free and MIT-licensed. Nothing is uploaded and there is no account.<br>
-Current version <b class="ver">0.9.15</b>. Extensions never update themselves, so check back here. <a href="https://github.com/urbanmorph/yellide/blob/main/CHANGELOG.md">What changed</a></p>
+Current version <b class="ver">0.9.16</b>. Extensions never update themselves, so check back here. <a href="https://github.com/urbanmorph/yellide/blob/main/CHANGELOG.md">What changed</a></p>
 
 </div>
 </body>

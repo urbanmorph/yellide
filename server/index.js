@@ -16,6 +16,15 @@ const SERVER_VERSION = (() => {
 })();
 const PKG_VERSION = SERVER_VERSION;
 const STARTED = Date.now();
+
+// Opt out of the one thing Yellide writes to a drive. A boolean user_config arrives as the
+// string "true"/"false"; if the client never expanded it, the literal "${...}" arrives
+// instead, and an unexpanded template must never be read as consent either way.
+const NO_DRIVE_MARKER = (() => {
+  const v = String(process.env.YELLIDE_NO_DRIVE_MARKER || '').trim();
+  if (!v || /^\$\{.*\}$/.test(v)) return false;          // not set: keep current behaviour
+  return /^(1|true|yes|on)$/i.test(v);
+})();
 let core = null, coreErr = null, storage = null, discover = null, T = null;
 try {
   core = require('./core.js');
@@ -38,7 +47,8 @@ function startScan(roots, cap) {
   const jobId = d.prepare('select last_insert_rowid() id').get().id;
 
   const w = new Worker(path.join(__dirname, 'worker.js'),
-    { workerData: { jobId, roots, dbPath: storage.catalogPath(), cap: cap || 20000 } });
+    { workerData: { jobId, roots, dbPath: storage.catalogPath(),
+                    cap: cap || 20000, writeMarker: !NO_DRIVE_MARKER } });
   w.on('message', m => log('scan', jobId, JSON.stringify(m).slice(0, 200)));
   w.on('error', e => {
     try { d.prepare('update scan_job set state=?, error=?, finished_at=? where id=?')

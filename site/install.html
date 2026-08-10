@@ -46,8 +46,8 @@ A website cannot read files on your computer, so it cannot help you find your fo
 <ol>
 
 <li>
-<b><a href="/yellide.mcpb" download="yellide-0.9.15.mcpb">Download Yellide</a></b>
-<div class="note">Version <b class="ver">0.9.15</b>, about 45 KB. Everything Yellide does happens on your machine.<br>It saves as <code>yellide-0.9.15.mcpb</code>, if an older number is sitting in your Downloads or on your Desktop, that is not this one.</div>
+<b><a href="/yellide.mcpb" download="yellide-0.9.16.mcpb">Download Yellide</a></b>
+<div class="note">Version <b class="ver">0.9.16</b>, about 45 KB. Everything Yellide does happens on your machine.<br>It saves as <code>yellide-0.9.16.mcpb</code>, if an older number is sitting in your Downloads or on your Desktop, that is not this one.</div>
 </li>
 
 <li>
@@ -125,13 +125,23 @@ skips cloud placeholders. Everything it can do is on the <a href="/privacy">priv
 and in <a href="https://github.com/urbanmorph/yellide">the source</a>. If you would rather
 keep approving each call, that works too. It is only tedious, not broken.</div>
 
+<h2>If you would rather it wrote nothing to your drives</h2>
+
+<p>Yellide writes one small file, <code>.yellide/volume-id</code>, to each external drive it
+indexes. It holds a random identifier and nothing else, and it is what lets Yellide still
+recognise a drive you have renamed.</p>
+
+<p>To stop it: <b class="k">Settings &rarr; Extensions &rarr; Yellide &rarr; Configure</b>,
+then <b class="k">Never write anything to my drives</b>. Everything else works the same.
+<a href="/privacy">The privacy page</a> lists every write Yellide makes.</p>
+
 <h2>Already have it? Upgrading</h2>
 
 <p>Upgrading is the same three steps, with one difference that catches people:</p>
 
 <ol>
 <li><b>Download the new file and drag it on as before.</b>
-<div class="note">The filename carries the version, <code>yellide-0.9.15.mcpb</code>.
+<div class="note">The filename carries the version, <code>yellide-0.9.16.mcpb</code>.
 If the number is lower than the one on this page, it is a stale download.</div></li>
 
 <li><b>The button now says <em>Update</em>, not <em>Install Anyway</em>.</b>
@@ -170,7 +180,7 @@ counts and capabilities, so it is safe to paste anywhere.</p>
 <pre>YELLIDE DIAGNOSTIC REPORT
 Contains no filenames, paths, captions or search terms. Safe to share.
 
-version               0.9.15
+version               0.9.16
 platform              darwin arm64
 can view pictures     yes, sips (built into macOS)
 assets indexed        8,910
@@ -221,7 +231,7 @@ once you know what working looks like.</p>
 
 <hr>
 <p class="foot">Yellide is free and MIT-licensed. Nothing is uploaded and there is no account. If it ever disappears, <code>export</code> writes your whole index to plain JSON.<br>
-Current version <b class="ver">0.9.15</b>. Extensions never update themselves, so check back here. <a href="https://github.com/urbanmorph/yellide/blob/main/CHANGELOG.md">What changed</a></p>
+Current version <b class="ver">0.9.16</b>. Extensions never update themselves, so check back here. <a href="https://github.com/urbanmorph/yellide/blob/main/CHANGELOG.md">What changed</a></p>
 
 
 </div>

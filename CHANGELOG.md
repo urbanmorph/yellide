@@ -11,6 +11,24 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.16] 2026-08-10
+
+### Added
+
+- **The drive marker can be refused.** Settings, Extensions, Yellide, Configure, then
+  "Never write anything to my drives". Or `YELLIDE_NO_DRIVE_MARKER=1` in the environment for
+  any other MCP client. Indexing and searching are unaffected; the only loss is that a
+  renamed drive can no longer be recognised as the same one.
+
+  The switch had existed in `storage.js` since the beginning and nothing set it, so
+  /privacy carried a paragraph admitting the gap and promising a fix. A promise on a page is
+  the exact thing that page exists to avoid, so it is wired up instead, and the safety test
+  now fails the build if `writeMarker:false` ever stops reaching the code that writes.
+
+  Verified against a real mounted disk image, because the first test passed while proving
+  nothing: `volumeMarker` only acts at a mount point, and a temp directory is not one, so
+  every case came back "did not write" including the one that should have written.
+
 ## [0.9.15] 2026-08-10
 
 ### Changed
@@ -160,6 +178,7 @@ The first version that does the whole job.
 - Private documents are labelled by type and never by content, and are redacted on export.
 - `export` writes the whole index to plain JSON, so nothing here is a one-way door.
 
+[0.9.16]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.16
 [0.9.15]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.15
 [0.9.13]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.13
 [0.9.12]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.12

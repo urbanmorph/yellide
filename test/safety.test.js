@@ -75,6 +75,33 @@ for (const a of ALLOWED) {
     fail.push(`allowlist entry no longer used: ${a.file} ${a.call}(), remove it`);
 }
 
+// The one thing Yellide writes to a user's drive must be refusable, and the refusal must
+// actually reach the code that writes it. Verified on a real mounted volume by hand; this
+// keeps the wiring from rotting without needing one.
+{
+  const storage = require('../server/storage.js');
+  const core = require('../server/core.js');
+  const os = require('os');
+  const real = storage.volumeMarker;
+  let called = false;
+  storage.volumeMarker = (...a) => { called = true; return real(...a); };
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'yl-consent-'));
+  fs.writeFileSync(path.join(dir, 'x.jpg'), Buffer.alloc(1024));
+  const dbp = path.join(os.tmpdir(), 'yl-consent-' + process.pid + '.db');
+  try {
+    const db = storage.open(dbp);
+    core.scan(db, dir, { cap: 5, writeMarker: false });
+    db.close();
+  } catch (e) { fail.push('consent check could not run: ' + e.message); }
+  for (const sfx of ['', '-wal', '-shm']) { try { fs.unlinkSync(dbp + sfx); } catch {} }
+  fs.rmSync(dir, { recursive: true, force: true });
+  storage.volumeMarker = real;
+
+  if (called) fail.push('writeMarker:false still reached storage.volumeMarker(). '
+    + 'The opt-out on /privacy and in the extension settings would be a lie.');
+}
+
 if (fail.length) {
   console.error('\nSAFETY CHECK FAILED\n');
   fail.forEach(m => console.error('  ' + m));
@@ -84,5 +111,6 @@ if (fail.length) {
   process.exit(1);
 }
 
-console.log(`safety: ${files.length} files, ${seen.size} justified writes, no shell, no eval`);
+console.log(`safety: ${files.length} files, ${seen.size} justified writes, no shell, no eval,`
+  + ` drive marker refusable`);
 for (const a of ALLOWED) console.log(`  ${a.file.padEnd(12)} ${(a.call + '()').padEnd(16)} ${a.what}`);
