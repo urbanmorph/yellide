@@ -75,11 +75,10 @@ other MCP client, set <code>YELLIDE_NO_DRIVE_MARKER=1</code> in the server&rsquo
 after you rename a drive, Yellide can no longer tell it is the same one, so it cannot say
 <em>&ldquo;that clip is on KERALA_2023&rdquo;</em> about a drive you have since renamed.</p>
 
-<div class="note">This page said for a day that the switch existed in the code but was not
-exposed, and that it was being fixed. That was a promise on a page, which is the thing this
-page exists to avoid. It is wired up now, and
-<a href="https://github.com/urbanmorph/yellide/blob/main/test/safety.test.js">the test</a>
-fails the build if the refusal ever stops reaching the code that does the writing.</div>
+<div class="note">The refusal is covered by
+<a href="https://github.com/urbanmorph/yellide/blob/main/test/safety.test.js">the same test</a>:
+if it ever stops reaching the code that does the writing, the build fails and no version
+ships.</div>
 
 <h2>What Yellide never does to your files</h2>
 <div class="log plain">
