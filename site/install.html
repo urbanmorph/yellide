@@ -93,47 +93,16 @@ certificate, not because anything is wrong.</p>
 
 <h2>Now just ask</h2>
 
-<div class="say">
-<p>“What media files do I have on this Mac?”</p>
+<div class="say"><p>&ldquo;What media files do I have on this Mac?&rdquo;</p></div>
+
+<p>Everything else worth saying is on <a href="/say">what to say</a>.</p>
+
+<h2>Two settings worth knowing</h2>
+
+<div class="log plain">
+<div class="row"><div class="k">Tool permissions</div><div class="v">Claude asks before every single tool call by default, and indexing an archive is hundreds of them. <b class="k">Settings &rarr; Extensions &rarr; Yellide &rarr; Configure</b>, then switch the group from <em>Needs approval</em> to <em>Always allow</em>. It is a real permission, and <a href="/privacy">everything it grants</a> is listed in full.</div></div>
+<div class="row"><div class="k">Never write anything to my drives</div><div class="v">Yellide writes one small file to each drive it indexes, so it still recognises the drive after you rename it. Same screen, if you would rather it wrote nothing at all. <a href="/privacy">Why it exists, and what you lose</a>.</div></div>
 </div>
-
-<p>Yellide finds your photos and videos by itself and starts indexing. Within seconds you can
-search by date, camera, folder and location. Then it will offer to look at your pictures and
-describe what is in them, so you can search for <em>what things are</em> rather than what
-they are called.</p>
-
-<div class="say">
-<p>“Find the cycling event”  ·  “What did I shoot in March 2020?”</p>
-<p>“Show me everything from the D610”  ·  “Open that one”</p>
-</div>
-
-<hr>
-
-<h2>One setting worth changing</h2>
-
-<p>By default Claude asks permission every single time it uses one of Yellide&rsquo;s
-thirteen tools. Indexing and describing an archive is hundreds of calls, so you will spend
-the evening clicking <em>Allow</em>.</p>
-
-<p>Go to <b>Settings &rarr; Extensions &rarr; Yellide &rarr; Configure</b>, find
-<b>Tool permissions</b>, and switch the group from <b>Needs approval</b> to
-<b>Always allow</b>.</p>
-
-<div class="note">This is a real permission and worth understanding rather than clicking
-through. Yellide reads your files and never writes to them, makes no network calls, and
-skips cloud placeholders. Everything it can do is on the <a href="/privacy">privacy page</a>
-and in <a href="https://github.com/urbanmorph/yellide">the source</a>. If you would rather
-keep approving each call, that works too. It is only tedious, not broken.</div>
-
-<h2>If you would rather it wrote nothing to your drives</h2>
-
-<p>Yellide writes one small file, <code>.yellide/volume-id</code>, to each external drive it
-indexes. It holds a random identifier and nothing else, and it is what lets Yellide still
-recognise a drive you have renamed.</p>
-
-<p>To stop it: <b class="k">Settings &rarr; Extensions &rarr; Yellide &rarr; Configure</b>,
-then <b class="k">Never write anything to my drives</b>. Everything else works the same.
-<a href="/privacy">The privacy page</a> lists every write Yellide makes.</p>
 
 <h2>Already have it? Upgrading</h2>
 
@@ -159,21 +128,12 @@ did not apply.</p>
 
 <h2>If something goes wrong</h2>
 <div class="log plain">
-<div class="row"><div class="k">It answers from memory instead of looking</div><div class="v">Ask <em>&ldquo;what media files do I have on this Mac?&rdquo;</em> rather than &ldquo;what&rsquo;s in my archive&rdquo;, the word <em>archive</em> can be read as your past conversations.</div></div>
-<div class="row"><div class="k">It says the index is empty</div><div class="v">The first scan runs in the background. Ask again in a minute; searching works on whatever has been indexed so far.</div></div>
-<div class="row"><div class="k">You updated but nothing changed</div><div class="v">A sideloaded extension keeps running the old code until you uninstall, reinstall and restart the app. Check the version at <b class="k">Settings &rarr; Extensions &rarr; Yellide</b>.</div></div>
-<div class="row"><div class="k">It asks permission constantly</div><div class="v">Every tool defaults to <em>Needs approval</em>. See the setting above.</div></div>
+<div class="row"><div class="k">You updated but nothing changed</div><div class="v">A sideloaded extension keeps running the old code until you uninstall, reinstall and restart. Check the version at <b class="k">Settings &rarr; Extensions &rarr; Yellide</b> against the one at the foot of this page.</div></div>
+<div class="row"><div class="k">It says the index is empty</div><div class="v">The first scan runs in the background. Ask again in a minute; searching works on whatever is indexed so far.</div></div>
+<div class="row"><div class="k">It asks permission for everything</div><div class="v">See the settings above.</div></div>
 <div class="row"><div class="k">The server never starts, and nothing reports an error</div><div class="v">Check for a leading space in a pasted path in the MCP config. It fails completely silently. It cost us an hour.</div></div>
-<div class="row"><div class="k">You dragged a media folder into the chat</div><div class="v">That tries to read every file into the conversation and will fail on a large folder. Yellide finds your folders itself. There is nothing to attach.</div></div>
+<div class="row"><div class="k">It answers without looking, or ignores you</div><div class="v">A wording problem rather than a fault. <a href="/say">What to say</a> has the phrasings that work, and the one thing never to do.</div></div>
 </div>
-
-<figure>
-  <img src="/img/installed.webp" width="900" height="444" loading="lazy" decoding="async"
-       alt="Settings, Extensions, Yellide: the extension panel with an Uninstall button, an
-            Enabled toggle and a Configure button.">
-  <figcaption>Installed. <b class="k">Uninstall</b> is top right. You will need it to upgrade,
-  because a sideloaded extension keeps running the old code until you reinstall and restart.</figcaption>
-</figure>
 
 <h2>Still stuck?</h2>
 
@@ -208,11 +168,7 @@ client that speaks MCP can use it. Point it at:</p>
 <pre>command: node
 args:    /path/to/yellide/server/index.js</pre>
 
-<div class="warn">
-<p style="margin:0"><b>Watch for a stray space.</b> Pasting a path into a settings field can
-pick up a leading space, and the app will report no error at all, the server simply
-never starts. It cost us an hour.</p>
-</div>
+
 
 <p>What you get depends on one thing: <b class="k">whether your AI can see pictures.</b></p>
 
@@ -238,8 +194,7 @@ once you know what working looks like.</p>
 </main>
 
 <hr>
-<p class="foot">Yellide is free and MIT-licensed. Nothing is uploaded and there is no account. If it ever disappears, <code>export</code> writes your whole index to plain JSON.<br>
-Current version <b class="ver">0.9.16</b>. Extensions never update themselves, so check back here. <a href="https://github.com/urbanmorph/yellide/blob/main/CHANGELOG.md">What changed</a></p>
+<p class="foot">Free &middot; MIT &middot; v<b class="ver">0.9.16</b> &middot; <a href="https://github.com/urbanmorph/yellide/blob/main/CHANGELOG.md">what changed</a></p>
 
 
 </div>
