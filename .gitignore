@@ -2,10 +2,17 @@
 node_modules/
 .pnpm-store/
 
-# Env
+# Secrets. The repo is public, so this list is load-bearing rather than tidy.
 .env
 .env.local
 .env.*.local
+# wrangler's local secret file, holds PEPPER
+.dev.vars
+.dev.vars.*
+*.pem
+*.key
+.cloudflare
+.wrangler/
 
 # Build output
 dist/

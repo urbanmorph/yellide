@@ -59,7 +59,7 @@ no build step, no lockfile.
 ## Layout
 
 ```
-server/           the whole product, ~2,200 lines, no dependencies
+server/           the whole product, no dependencies
   index.js        MCP server: tool definitions, auto-scan, stdio transport
   core.js         walking, identity, ISO-BMFF parsing, shoot clustering, incremental scan
   storage.js      data dir, migrations, volume markers
@@ -67,7 +67,7 @@ server/           the whole product, ~2,200 lines, no dependencies
   audio.js        ID3, RIFF/WAVE including BWF origination date, FLAC
   vision.js       stills via sips, video frames via qlmanage
   discover.js     density-ranked media discovery; needs no path
-  tools.js        the thirteen tools' implementations
+  tools.js        the tools' implementations
   worker.js       scanning off the stdio thread
 test/             node test/exif.test.js
 scripts/

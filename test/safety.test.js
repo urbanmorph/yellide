@@ -115,6 +115,37 @@ for (const f of files) {
       + 'only and must never touch content or paths.');
 }
 
+// The repository is public. A secret in a tracked file is a rotation and an apology, so
+// the build refuses rather than letting one through. .env.local and .dev.vars are ignored;
+// this catches the case where that stops being true, or a value is pasted somewhere else.
+{
+  const { execSync } = require('child_process');
+  let tracked = [];
+  try {
+    tracked = execSync('git ls-files', { cwd: path.join(SERVER, '..'), encoding: 'utf8' })
+      .split('\n').filter(Boolean);
+  } catch {}
+  const SECRET = [
+    [/CLOUDFLARE_API_TOKEN\s*[=:]\s*["']?[A-Za-z0-9_-]{20,}/, 'a Cloudflare token'],
+    [/\bgh[pousr]_[A-Za-z0-9]{20,}/, 'a GitHub token'],
+    [/\bsk-[A-Za-z0-9]{20,}/, 'an API key'],
+    [/\bAKIA[0-9A-Z]{16}\b/, 'an AWS key'],
+    [/-----BEGIN [A-Z ]*PRIVATE KEY-----/, 'a private key'],
+    [/\bPEPPER\s*[=:]\s*["']?[A-Za-z0-9_+/-]{16,}/, 'the counter pepper'],
+  ];
+  const root = path.join(SERVER, '..');
+  for (const f of tracked) {
+    if (/\.(png|jpg|jpeg|webp|woff2|ico|mcpb|svg)$/.test(f)) continue;
+    let src = '';
+    try { src = fs.readFileSync(path.join(root, f), 'utf8'); } catch { continue; }
+    for (const [re, what] of SECRET)
+      if (re.test(src)) fail.push(`${f} contains ${what}. This repository is public: remove it, `
+        + 'then rotate the credential, because it may already be pushed.');
+  }
+  for (const f of ['.env.local', '.dev.vars', '.env'])
+    if (tracked.includes(f)) fail.push(`${f} is tracked by git. It must be ignored.`);
+}
+
 // An allowlist entry that no longer matches anything is rot. Say so.
 for (const a of ALLOWED) {
   if (!seen.has(a.file + ':' + a.call))
@@ -158,5 +189,5 @@ if (fail.length) {
 }
 
 console.log(`safety: ${files.length} files, ${seen.size} justified writes, no shell, no eval,`
-  + ` drive marker refusable, no network`);
+  + ` drive marker refusable, no network, no tracked secrets`);
 for (const a of ALLOWED) console.log(`  ${a.file.padEnd(12)} ${(a.call + '()').padEnd(16)} ${a.what}`);

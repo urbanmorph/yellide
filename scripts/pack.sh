@@ -53,10 +53,15 @@ cp "$OUT" site/yellide.mcpb
 python3 - "$VERSION" <<'PY'
 import pathlib, re, sys
 version = sys.argv[1]
+idx = pathlib.Path('server/index.js').read_text()
+tools = str(len(re.findall(r"name: '([a-z_]+)',\s*\n?\s*description:", idx)))
+loc = '{:,}'.format(sum(len(f.read_text().splitlines()) for f in pathlib.Path('server').glob('*.js')))
 changed = []
 for f in pathlib.Path('site').glob('*.html'):
     s = f.read_text()
     new = re.sub(r'(<b class="ver">)[^<]*(</b>)', r'\g<1>' + version + r'\g<2>', s)
+    new = re.sub(r'(<b class="tools">)[^<]*(</b>)', r'\g<1>' + tools + r'\g<2>', new)
+    new = re.sub(r'(<b class="loc">)[^<]*(</b>)', r'\g<1>' + loc + r'\g<2>', new)
     new = re.sub(r'(version\s{2,})\d+\.\d+\.\d+', r'\g<1>' + version, new)
     # every mention of the filename, not just the download attribute. The prose beside
     # it drifted once. changelog.html is exempt: its old version numbers are history.

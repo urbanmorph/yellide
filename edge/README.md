@@ -69,6 +69,11 @@ not much of one.
 
 ## Deploying, when that is all done
 
+Credentials come from `.env.local`, read by `scripts/with-cf.sh`, which never prints them.
+There is no second secrets file: `wrangler secret put` reads stdin. If you ever run the
+Worker locally with `wrangler dev`, create `.dev.vars` with `PEPPER=...` at that point. It
+is already gitignored.
+
 ```sh
 npx wrangler d1 create yellide-counter
 npx wrangler d1 execute yellide-counter --file=edge/schema.sql --remote
