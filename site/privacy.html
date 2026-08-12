@@ -47,8 +47,57 @@ yourself. Yellide is not in the middle of it and never sees it.</p>
 <p>If you never ask for descriptions, nothing ever leaves.</p>
 
 <h2>What we collect</h2>
+
 <p><b class="k">Nothing.</b> There are no analytics on this website either, no counter, no
-pixel, no cookie. A download page that phones home would contradict the entire product.</p>
+pixel, no cookie. Yellide itself makes no network calls, and the build refuses to produce a
+version that does, so this is not a policy that could quietly lapse.</p>
+
+<h2>What we would like to collect, and how you will be asked</h2>
+
+<p>We want to put a figure on the front page saying what Yellide achieves across the people
+using it: how many files have been indexed, split by kind, and how far searching by content
+has improved since each install started. Cloudflare already tells us how many people visit
+this site and roughly where from. Nothing tells us whether the tool then worked, and that is
+the only gap this would fill.</p>
+
+<p><b class="k">It is not built, and today it cannot be.</b> There is no code in Yellide that
+sends anything, and the test that fails the build on any network call is still in force. This
+is written down before it exists rather than after, so you can object while objecting still
+changes something.</p>
+
+<h3>Everything it would send</h3>
+<div class="log">
+<div class="row"><div class="k"><code>install_id</code></div><div class="v">A random value made on your machine. Not your name, not your device, not derived from anything about you.</div></div>
+<div class="row"><div class="k"><code>version</code></div><div class="v">Which version of Yellide.</div></div>
+<div class="row"><div class="k"><code>images, video, audio</code></div><div class="v">How many of each you have indexed.</div></div>
+<div class="row"><div class="k"><code>files_total</code></div><div class="v">The total.</div></div>
+<div class="row"><div class="k"><code>coverage</code></div><div class="v">What percentage can be searched by what is in it.</div></div>
+<div class="row"><div class="k"><code>captions</code></div><div class="v">How many descriptions have been written.</div></div>
+</div>
+
+<p>Six numbers, a version, and one random string. No filename, no folder, no path, no drive label, no
+caption, no search term, no photograph. No IP address, no hostname, no operating system, no
+locale, no timezone. The endpoint <b class="k">rejects</b> anything outside that list rather
+than ignoring it, so a later version cannot quietly begin sending more.</p>
+
+<p>Your <code>install_id</code> would not be stored. What is stored is a one-way hash of it
+combined with a secret held on the server, so the stored key cannot be turned back into
+anything about your machine. Dates are kept as a month, never a moment.</p>
+
+<h3>How you would be asked</h3>
+
+<p><b class="k">Off unless you turn it on.</b> After your first index finishes, Claude would
+ask you once, in plain words, and remember your answer so it never asks again. Saying no
+costs you nothing and changes nothing about how Yellide works.</p>
+
+<p>Changing your mind removes the row. There is no account to log into and no email to send,
+because a right to be forgotten that first requires you to identify yourself is not much of a
+right.</p>
+
+<p>The schema, the endpoint and its rules are already public and readable:
+<a href="https://github.com/urbanmorph/yellide/tree/main/edge">three files, one of them the
+schema itself</a>. If any of it looks wrong to you,
+<a href="https://github.com/urbanmorph/yellide/issues">say so</a>.</p>
 
 <h2>What gets written to your drives</h2>
 <p>Two things, and only two.</p>
