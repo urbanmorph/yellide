@@ -11,6 +11,16 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.17] 2026-08-12
+
+### Changed
+
+- **The no-network claim is enforced, not just stated.** /privacy says Yellide makes no
+  network calls three times and invites people to check. The build gate covered filesystem
+  writes, shell and eval, but not that, so the strongest claim on the page was the one
+  nothing guarded. Any transport, network client or URL literal in `server/` now fails the
+  build. Verified by adding a beacon on purpose and watching it refuse.
+
 ## [0.9.16] 2026-08-10
 
 ### Added
@@ -178,6 +188,7 @@ The first version that does the whole job.
 - Private documents are labelled by type and never by content, and are redacted on export.
 - `export` writes the whole index to plain JSON, so nothing here is a one-way door.
 
+[0.9.17]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.17
 [0.9.16]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.16
 [0.9.15]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.15
 [0.9.13]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.13

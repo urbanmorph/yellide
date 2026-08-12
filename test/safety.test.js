@@ -55,6 +55,30 @@ for (const f of files) {
   });
 }
 
+// Nothing phones home. /privacy states this three times and invites people to check it,
+// so it is checked here rather than asserted there. No transport, no client, no URL.
+const NETWORK = [
+  "require('http')", 'require("http")', "require('https')", 'require("https")',
+  "require('node:http')", "require('node:https')", "require('net')", "require('node:net')",
+  "require('dgram')", "require('node:dgram')", "require('dns')", "require('node:dns')",
+  "require('tls')", "require('node:tls')", "require('http2')", "require('node:http2')",
+];
+for (const f of files) {
+  const src = fs.readFileSync(path.join(SERVER, f), 'utf8');
+  src.split('\n').forEach((line, i) => {
+    const t = line.trimStart();
+    if (t.startsWith('//') || t.startsWith('*')) return;      // a URL in a comment is fine
+    const code = line.replace(/\/\/.*$/, '');
+    for (const n of NETWORK)
+      if (code.includes(n)) fail.push(`${f}:${i + 1}  ${n} — Yellide makes no network calls`);
+    if (/\bfetch\s*\(/.test(code)) fail.push(`${f}:${i + 1}  fetch() — Yellide makes no network calls`);
+    if (/\b(XMLHttpRequest|WebSocket|EventSource)\b/.test(code))
+      fail.push(`${f}:${i + 1}  a network client — Yellide makes no network calls`);
+    if (/['"`]https?:\/\//.test(code))
+      fail.push(`${f}:${i + 1}  a URL in code — Yellide makes no network calls`);
+  });
+}
+
 // No shell. execFile with an argv array cannot be tricked by a filename containing ";rm -rf".
 for (const f of files) {
   const src = fs.readFileSync(path.join(SERVER, f), 'utf8');
@@ -112,5 +136,5 @@ if (fail.length) {
 }
 
 console.log(`safety: ${files.length} files, ${seen.size} justified writes, no shell, no eval,`
-  + ` drive marker refusable`);
+  + ` drive marker refusable, no network`);
 for (const a of ALLOWED) console.log(`  ${a.file.padEnd(12)} ${(a.call + '()').padEnd(16)} ${a.what}`);
