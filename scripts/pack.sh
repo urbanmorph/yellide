@@ -65,6 +65,8 @@ stale = [f.name for f in pathlib.Path('site').glob('*.html')
 if stale:
     print('  WARNING: a version number that is not %s survives in: %s' % (version, stale))
 PY
+# the plan is gitignored and local; keep its facts honest when one exists
+python3 scripts/plan-stats.py 2>/dev/null || true
 echo "  site/yellide.mcpb updated"
 echo
 echo "install: drag onto Claude Desktop, or Settings → Extensions → Advanced → Install Extension"
