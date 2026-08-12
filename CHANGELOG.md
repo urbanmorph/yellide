@@ -11,6 +11,40 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.20] 2026-08-12
+
+### Changed
+
+- **The counter no longer asks permission, because there is nothing to consent to.** It sends
+  six counts, a version, and a random label that the server hashes on arrival and does not
+  store. None of that is personal data under the DPDP Act, so gating it behind a consent
+  question was theatre. Yellide tells you about it once, in plain words, and
+  `stop the Yellide counter` stops it and deletes your row at any time. Claude cannot turn it
+  back on by itself.
+- **Nothing is sent before you have been told.** The server stamps that at the moment it
+  writes the notice, not when the model relays it, so a model that swallows the message cannot
+  cause a silent send.
+- `set_contribution` is now only for turning it back on after you stopped it. Its description
+  tells the model never to call it on its own initiative.
+- **"Makes no network calls" is gone from the README and `/install`.** It stopped being true
+  in 0.9.19 and said so in three places for a day.
+
+## [0.9.19] 2026-08-12
+
+### Added
+
+- **The counter is deployed.** A Cloudflare Worker and D1 database now receive it. The Worker
+  refuses any field it does not expect rather than ignoring it, so a later client cannot
+  quietly start sending more than `/privacy` admits to.
+
+### Fixed
+
+- The test suite would have posted its fixture counts to the live counter. It blanks
+  `YELLIDE_COUNTER` before loading `contribute.js`, and endpoint resolution moved from `||` to
+  `??` so an explicit empty string switches the counter off rather than falling back.
+- The safety audit printed "no network" while `contribute.js` reaches the network by design.
+  It prints "network only in contribute.js" now, which is what the check has always enforced.
+
 ## [0.9.18] 2026-08-12
 
 ### Added

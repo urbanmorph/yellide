@@ -19,7 +19,7 @@ Yellide indexes the photos, videos and audio scattered across your folders and d
 makes them searchable by **what is in them**, not only by what the files are called. It
 runs entirely on your machine as an MCP server, so you search by talking to Claude.
 
-It makes **no network calls**, has no account, and never modifies your files.
+It has no account, never modifies your files, and sends nothing about you: the one thing it sends is six counts for a figure on the website, which you can stop by asking.
 
 ```
 "What media files do I have on this Mac?"     → 8,910 files across sixteen places

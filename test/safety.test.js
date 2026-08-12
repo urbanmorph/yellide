@@ -104,8 +104,16 @@ for (const f of files) {
   const lines = src.split('\n').length;
   if (lines > 140) fail.push(`${NETWORK_ALLOWED} is ${lines} lines. The one file allowed to `
     + 'reach the network must stay short enough that someone will actually read it.');
-  if (!/consent\(db\) !== 'yes'/.test(src))
-    fail.push(`${NETWORK_ALLOWED} no longer checks consent before sending.`);
+  // The counter sends no personal data, so it is not gated on consent. It is gated on two
+  // things that must both survive any refactor: the user has been told, and the user has not
+  // opted out. Lose either and Yellide is counting people who were never told, or people who
+  // asked it to stop. Both are on /privacy as promises.
+  if (!/const optedOut = db => consent\(db\) === 'no'/.test(src))
+    fail.push(`${NETWORK_ALLOWED} no longer honours opting out.`);
+  if (!/const wouldSend = db => !optedOut\(db\) && !!get\(db, 'contribute_told_at'\)/.test(src))
+    fail.push(`${NETWORK_ALLOWED} no longer requires the user to have been told first.`);
+  if (!/if \(!ENDPOINT \|\| !wouldSend\(db\)\) return false;/.test(src))
+    fail.push(`${NETWORK_ALLOWED} sends without checking wouldSend().`);
   if (!/ENDPOINT = \(process\.env\.YELLIDE_COUNTER/.test(src))
     fail.push(`${NETWORK_ALLOWED} no longer takes its endpoint from the environment, so it `
       + 'could reach somewhere the user never configured.');

@@ -4,9 +4,12 @@
 // means the question "what can this send, and when" has one place to look, and a reviewer
 // reads eighty lines rather than the whole server.
 //
-// It sends nothing until the user has said yes, once, to a question Yellide itself put to
-// them after their first index finished. Never asked and never answered both mean no, so a
-// model that stays silent cannot cause anything to be sent.
+// What it sends is six counts, a version and a random label that the server hashes and does
+// not store. Nothing in that describes a person, which is why it is not gated on consent.
+//
+// It is still gated on two things: the user has been told, and the user has not opted out.
+// Being told is stamped by the server when it writes the notice, not by the model when it
+// relays it, so a model that stays quiet cannot cause a silent send.
 
 // Where the counter lives. A constant rather than user configuration, so consent is the only
 // thing anyone has to think about and the address cannot be pointed somewhere it was never
@@ -22,32 +25,33 @@ const get = (db, k) => { try { return db.prepare('select v from meta where k = ?
 const put = (db, k, v) => db.prepare(
   'insert into meta(k,v) values(?,?) on conflict(k) do update set v = excluded.v').run(k, String(v));
 
-/** 'yes' | 'no' | null when never asked. */
+/** 'yes' | 'no' | null when the user has never said either way. */
 const consent = db => get(db, 'contribute');
 
+/** The only state that stops a send. Never having said anything is not opting out. */
+const optedOut = db => consent(db) === 'no';
+
 /**
- * Recorded when the question has actually been put into a tool result. Yellide has no screen,
- * so the question reaches the user through Claude, which makes set_contribution a tool a model
- * can call unprompted. This is the one thing the server can check for itself.
+ * Stamped when the notice has actually been written into a tool result. The server does this
+ * itself, at the point of emission, so a model that swallows the message cannot cause a send
+ * the user was never told about.
  */
-const markAsked = db => put(db, 'contribute_asked_at', Date.now());
+const markTold = db => put(db, 'contribute_told_at', Date.now());
+
+/** Everything except the endpoint and the once-a-day timer. Exists so this is testable. */
+const wouldSend = db => !optedOut(db) && !!get(db, 'contribute_told_at');
 
 function setConsent(db, yes) {
-  // A yes nobody was asked for is not consent. A no never needs proving.
-  if (yes && !get(db, 'contribute_asked_at')) {
-    return { text: 'Yellide has not put that question to you yet, so nothing has been turned on. '
-      + 'It will ask once, by itself, after your first index finishes.' };
-  }
   put(db, 'contribute', yes ? 'yes' : 'no');
   return { text: yes
-    ? 'Thank you. Your totals will be added to the counter on yellide.pages.dev, and nothing else. '
-      + 'You can stop at any time by saying so, and the row is deleted.'
-    : 'Nothing will be sent. Yellide will not ask again.' };
+    ? 'The counter is back on. Your totals are added to the figure on yellide.pages.dev, and '
+      + 'nothing else.'
+    : 'Stopped. Nothing further is sent, and your row has been deleted.' };
 }
 
-/** Ask once, and only when there is something worth contributing. */
-function shouldAsk(db) {
-  if (consent(db) !== null) return false;
+/** Tell them once, and only when there is a finished index worth counting. */
+function shouldNotify(db) {
+  if (get(db, 'contribute_told_at')) return false;
   if (!ENDPOINT) return false;
   try {
     const done = db.prepare("select count(*) n from scan_job where state='done'").get().n;
@@ -97,7 +101,7 @@ function post(route, body, log) {
  * able to make the tool feel slow, and a network failure must never reach the user.
  */
 function maybeSend(db, version, installId, log = () => {}) {
-  if (consent(db) !== 'yes' || !ENDPOINT) return false;
+  if (!ENDPOINT || !wouldSend(db)) return false;
   if (Date.now() - Number(get(db, 'contributed_at') || 0) < DAY) return false;
   put(db, 'contributed_at', Date.now());
   post('/contribute', payload(db, version, installId), log);
@@ -107,9 +111,10 @@ function maybeSend(db, version, installId, log = () => {}) {
 /** Withdraw. Deletes the row, then stops sending. */
 function forget(db, installId, log = () => {}) {
   put(db, 'contribute', 'no');
-  if (!ENDPOINT) return { text: 'Nothing was being sent. Yellide will not ask again.' };
+  if (!ENDPOINT) return { text: 'Nothing was being sent. Nothing will be.' };
   post('/forget', { install_id: installId }, log);
   return { text: 'Your row has been deleted and nothing further will be sent.' };
 }
 
-module.exports = { consent, setConsent, markAsked, shouldAsk, payload, maybeSend, forget, ENDPOINT };
+module.exports = { consent, optedOut, setConsent, markTold, wouldSend, shouldNotify,
+                   payload, maybeSend, forget, ENDPOINT };

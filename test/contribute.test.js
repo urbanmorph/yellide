@@ -110,16 +110,65 @@ check('an empty index reports zero rather than dividing by it', () => {
   for (const s of ['', '-wal', '-shm']) { try { fs.unlinkSync(p2 + s); } catch {} }
 });
 
-check('sends nothing without consent, and nothing without an endpoint', () => {
-  assert.strictEqual(contribute.consent(db), null, 'starts unasked');
-  assert.strictEqual(contribute.maybeSend(db, '9.9.9', 'x'), false, 'sent while unasked');
-  contribute.markAsked(db);
-  contribute.setConsent(db, true);
-  assert.strictEqual(contribute.consent(db), 'yes');
-  assert.strictEqual(contribute.maybeSend(db, '9.9.9', 'x'), false,
-    'sent with consent but no endpoint configured');
-  contribute.setConsent(db, false);
-  assert.strictEqual(contribute.maybeSend(db, '9.9.9', 'x'), false, 'sent after being declined');
+check('counts by default, because counts are not personal data', () => {
+  // The stored row is six numbers and an unreversible hash. Nothing in it is about a person,
+  // so this is not consent-based processing and does not start switched off. What it does
+  // offer is a way out, which is more than the law asks for.
+  const fresh = storage.open(dbPath + '-default');
+  assert.strictEqual(contribute.consent(fresh), null, 'starts with nothing said either way');
+  assert.strictEqual(contribute.optedOut(fresh), false, 'a fresh install reads as opted out');
+  fresh.close();
+  for (const x of ['', '-wal', '-shm']) { try { fs.unlinkSync(dbPath + '-default' + x); } catch {} }
+});
+
+check('nothing is sent until the user has actually been told', () => {
+  // Stamped by the server when it emits the notice, not by the model when it relays it, so
+  // a model that swallows the message cannot cause a silent send.
+  const fresh = storage.open(dbPath + '-untold');
+  assert.strictEqual(contribute.wouldSend(fresh), false, 'ready to send before telling anyone');
+  contribute.markTold(fresh);
+  assert.strictEqual(contribute.wouldSend(fresh), true, 'still not ready after telling');
+  fresh.close();
+  for (const x of ['', '-wal', '-shm']) { try { fs.unlinkSync(dbPath + '-untold' + x); } catch {} }
+});
+
+check('opting out stops it, and stays stopped', () => {
+  const fresh = storage.open(dbPath + '-out');
+  contribute.markTold(fresh);
+  contribute.setConsent(fresh, false);
+  assert.strictEqual(contribute.optedOut(fresh), true);
+  assert.strictEqual(contribute.wouldSend(fresh), false, 'ready to send after opting out');
+  assert.strictEqual(contribute.maybeSend(fresh, '9.9.9', 'x'), false, 'sent after opting out');
+  fresh.close();
+  for (const x of ['', '-wal', '-shm']) { try { fs.unlinkSync(dbPath + '-out' + x); } catch {} }
+});
+
+check('opting back in works, for anyone who changes their mind', () => {
+  const fresh = storage.open(dbPath + '-in');
+  contribute.markTold(fresh);
+  contribute.setConsent(fresh, false);
+  contribute.setConsent(fresh, true);
+  assert.strictEqual(contribute.optedOut(fresh), false);
+  fresh.close();
+  for (const x of ['', '-wal', '-shm']) { try { fs.unlinkSync(dbPath + '-in' + x); } catch {} }
+});
+
+check('no endpoint means no send, whatever anyone said', () => {
+  // YELLIDE_COUNTER is blanked at the top of this file, so this is the state under test.
+  const fresh = storage.open(dbPath + '-noep');
+  contribute.markTold(fresh);
+  assert.strictEqual(contribute.ENDPOINT, '', 'the suite is pointed at the live counter');
+  assert.strictEqual(contribute.wouldSend(fresh), true, 'the fixture is not otherwise ready');
+  assert.strictEqual(contribute.maybeSend(fresh, '9.9.9', 'x'), false, 'sent with no endpoint');
+  fresh.close();
+  for (const x of ['', '-wal', '-shm']) { try { fs.unlinkSync(dbPath + '-noep' + x); } catch {} }
+});
+
+check('the notice is a statement, not a question the model can answer for them', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'server', 'index.js'), 'utf8');
+  assert.ok(!/in your own words/.test(src), 'the notice is paraphrased by the model');
+  assert.ok(/WORD FOR WORD|verbatim/.test(src), 'nothing tells the model to relay it unchanged');
+  assert.ok(/stop the Yellide counter/i.test(src), 'the notice does not say how to switch it off');
 });
 
 check('the shipped build points at the real counter, not at nothing', () => {
@@ -132,47 +181,10 @@ check('the shipped build points at the real counter, not at nothing', () => {
   assert.ok(/^https:\/\/\S+$/.test(m[1]), `DEFAULT_ENDPOINT is ${JSON.stringify(m[1])}`);
 });
 
-check('never asks before there is a finished index worth counting', () => {
-  assert.strictEqual(contribute.shouldAsk(db), false);
-});
 
-// The question reaches the user through Claude, because Yellide has no screen of its own.
-// That makes set_contribution a tool a model can call on its own initiative, and a yes
-// nobody was asked for is not consent. Declining never needs proof; agreeing does.
-check('a yes is refused unless the question was actually put to the user', () => {
-  const fresh = storage.open(dbPath + '-consent');
-  assert.strictEqual(contribute.consent(fresh), null);
-  contribute.setConsent(fresh, true);
-  assert.strictEqual(contribute.consent(fresh), null,
-    'a model turned the counter on without the question ever being asked');
-  fresh.close();
-  for (const s of ['', '-wal', '-shm']) { try { fs.unlinkSync(dbPath + '-consent' + s); } catch {} }
-});
 
-check('a no is always honoured, asked or not', () => {
-  const fresh = storage.open(dbPath + '-decline');
-  contribute.setConsent(fresh, false);
-  assert.strictEqual(contribute.consent(fresh), 'no', 'a decline was not recorded');
-  fresh.close();
-  for (const s of ['', '-wal', '-shm']) { try { fs.unlinkSync(dbPath + '-decline' + s); } catch {} }
-});
 
-check('a yes is recorded once the question has been put', () => {
-  const fresh = storage.open(dbPath + '-asked');
-  contribute.markAsked(fresh);
-  contribute.setConsent(fresh, true);
-  assert.strictEqual(contribute.consent(fresh), 'yes');
-  fresh.close();
-  for (const s of ['', '-wal', '-shm']) { try { fs.unlinkSync(dbPath + '-asked' + s); } catch {} }
-});
 
-check('the wording put to the user is fixed, not paraphrased by the model', () => {
-  const src = fs.readFileSync(path.join(__dirname, '..', 'server', 'index.js'), 'utf8');
-  assert.ok(!/in your own words/.test(src),
-    'the consent notice is paraphrased by the model, so what the user hears is not what ' +
-    '/privacy says. A notice that changes wording every time is not a notice.');
-  assert.ok(/WORD FOR WORD|verbatim/.test(src), 'nothing tells the model to relay it unchanged');
-});
 
 db.close();
 for (const s of ['', '-wal', '-shm']) { try { fs.unlinkSync(dbPath + s); } catch {} }

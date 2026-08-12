@@ -331,18 +331,15 @@ const TOOLS = [
       required: ['ids'] } },
   { name: 'set_contribution',
     description:
-      'Record whether the user agrees to contribute anonymous totals to the counter on the Yellide '
-      + 'website. ONLY call this after asking them in plain words and getting a clear answer. Never '
-      + 'assume, never default to yes, and never ask twice. What would be sent: how many images, '
-      + 'videos and audio files are indexed, what percentage can be searched by content, how many '
-      + 'captions exist, the Yellide version, and a random id that is not stored as given. Never a '
-      + 'filename, path, drive name, caption, search term or anything about their machine.',
+      'Turn the website counter back on for someone who previously stopped it. ONLY call this when '
+      + 'the user themselves asks for it. Never call it on your own initiative and never to answer '
+      + 'for them. To stop, use stop_contributing, which also deletes their row.',
     inputSchema: { type: 'object', properties: {
-      consent: { type: 'boolean', description: 'true only if they clearly said yes.' } },
+      consent: { type: 'boolean', description: 'true only if they asked to turn it back on.' } },
       required: ['consent'] } },
   { name: 'stop_contributing',
-    description: 'Withdraw. Deletes their row from the counter and stops sending. Call whenever the '
-      + 'user asks to stop, opt out, or be forgotten.',
+    description: 'Stop the website counter and delete their row from it. Call whenever the user '
+      + 'asks to stop, opt out, or be forgotten. Nothing further is sent, ever.',
     inputSchema: { type: 'object', properties: {} } },
   { name: 'diagnostics', description:
       'A shareable health report for when something is wrong: version, platform, capabilities, counts, ' +
@@ -462,18 +459,19 @@ function handle(req) {
       if (n === 'describe_archive') {
         out = asText(T.describeArchive(db())) + autoNote;
         // Asked once, ever, and only when there is a finished index worth counting.
-        if (contribute?.shouldAsk(db())) {
-          // Recorded at the one place the question is actually emitted, so a model cannot
-          // record agreement to a question that was never put to anyone.
-          contribute.markAsked(db());
-          out += '\n\nTHEN PUT THIS TO THEM, ONCE. Relay it WORD FOR WORD, do not summarise it '
-          + 'or rephrase it, then call set_contribution with their answer. Do not push, and do '
-          + 'not ask again whatever they say: '
-          + '"Yellide keeps a counter on its website showing how much people have indexed and how much of '
-          + 'it can be searched by content. Would you like your totals added? It would send how many images, '
-          + 'videos and audio files you have, what percentage is searchable, and how many descriptions exist. '
-          + 'Never a filename, a folder, a photograph or anything about your machine. It is off unless you '
-          + 'say yes, and you can stop at any time."';
+        if (contribute?.shouldNotify(db())) {
+          // Stamped here, where the notice is actually written, so nobody is counted before
+          // they have been told. A notice, not a question: there is nothing to consent to.
+          contribute.markTold(db());
+          out += '\n\nTHEN TELL THEM THIS, ONCE. Relay it WORD FOR WORD, do not summarise it '
+          + 'or rephrase it. It is a statement, not a question, so do not ask them to decide '
+          + 'anything and do not call set_contribution unless they themselves ask to stop: '
+          + '"Yellide adds your totals to a counter on its website, showing how much people have '
+          + 'indexed and how much of it is searchable by content. That is six numbers: how many '
+          + 'images, videos and audio files you have, what percentage is searchable, and how many '
+          + 'descriptions exist. Never a filename, a folder, a photograph, a search term, or '
+          + 'anything about your machine or where you are. If you would rather it did not, say '
+          + '\'stop the Yellide counter\' and it stops."';
         }
       }
       else if (n === 'search') {

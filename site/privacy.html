@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Yellide privacy: what stays, what leaves, what is written</title>
-<meta name="description" content="Yellide sends nothing unless you switch on the counter, and it is off until you do. Here is exactly what is written to your drives, what leaves your computer, and the six numbers the counter sends.">
+<meta name="description" content="Yellide collects no personal data at all. Here is exactly what is written to your drives, what leaves your computer, the six numbers the counter sends, and how to stop even those.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Yellide">
 <meta property="og:title" content="Yellide privacy: what stays, what leaves, what is written">
-<meta property="og:description" content="Yellide sends nothing unless you switch on the counter, and it is off until you do. Here is exactly what is written to your drives, what leaves your computer, and the six numbers the counter sends.">
+<meta property="og:description" content="Yellide collects no personal data at all. Here is exactly what is written to your drives, what leaves your computer, the six numbers the counter sends, and how to stop even those.">
 <meta property="og:url" content="https://yellide.pages.dev/privacy">
 <meta property="og:image" content="https://yellide.pages.dev/og.png">
 <meta property="og:image:width" content="1200">
@@ -37,12 +37,12 @@
 exactly what happens to it, in plain terms, with nothing left out.</p>
 
 <h2>What leaves your computer</h2>
-<p><b class="k">Nothing, unless you turn on the counter.</b> No account, no licence check,
-no update ping.</p>
+<p><b class="k">Six numbers, and nothing else.</b> No account, no licence check, no update
+ping.</p>
 
 <p>Exactly one part of Yellide is able to send anything at all:
 <a href="https://github.com/urbanmorph/yellide/blob/main/server/contribute.js">the counter</a>
-described below, which is off until you say yes. If any other part were ever made to send
+described below, which you can stop at any time. If any other part were ever made to send
 something, an automatic check would refuse to let that version out.</p>
 <p>The one time anything leaves your machine is when you ask Claude to look at your
 pictures. Those images go to your own AI provider, on your own subscription, in your own
@@ -51,21 +51,18 @@ conversation. Yellide is not in the middle of it. Never ask, and nothing ever le
 
 <h2>What we collect</h2>
 
-<p><b class="k">Nothing, until you say yes.</b> No analytics on this website either: no
+<p><b class="k">No personal data at all.</b> No analytics on this website either: no
 tracking pixel, no cookie.</p>
 
-<p>One exception, described in full below: a counter that adds your totals to a figure on
-the front page, if you say yes when Yellide asks. Six numbers, nothing else, and off until
-then.</p>
+<p>One thing is collected, described in full below: six numbers that add your totals to a
+figure on the front page. Nothing in them is about you, which is why there is no consent
+question. You can still stop it.</p>
 
-<h2>The one thing we ask to collect</h2>
+<h2>The counter, and why it does not ask permission</h2>
 
-<p>We want a figure on the front page showing what Yellide achieves across the people
-using it: files indexed, by kind, and how far content search has improved. Cloudflare already
-counts visits. Nothing counts whether the tool then worked.</p>
-
-<p><b class="k">It is off until you turn it on.</b> After your first index finishes, Yellide
-asks once. Nothing is sent unless you say yes, and it never asks twice.</p>
+<p>We want a figure on the front page showing what Yellide achieves across everyone using it:
+files indexed, by kind, and how far content search has improved. Cloudflare already counts
+visits to this website. Nothing counts whether the tool then worked.</p>
 
 <h3>Everything it sends</h3>
 <div class="log">
@@ -82,32 +79,40 @@ no search term. No address, no computer name, no operating system, no country, n
 Anything else is refused outright rather than quietly ignored, so a later version cannot
 start sending more without this page changing first.</p>
 
-<p>Once a day at most, and only while you are using Yellide anyway. It is sent in the
-background and never waits, so it cannot make anything feel slower and a failure never
-reaches you.</p>
+<p>The random label is not stored either. It is scrambled on arrival with a key held on the
+server, in a way that cannot be undone, and dates are kept only as a month. What ends up in
+the database is a string nobody can trace back and six numbers. Once a day at most, in the
+background, only while you are using Yellide anyway.</p>
 
-<p>That random label is not kept either. It is scrambled first, using a key held on the
-server, in a way that cannot be undone. Dates are kept only as a month.</p>
+<h3>Why there is no consent question</h3>
 
-<h3>How you are asked</h3>
+<p>India&rsquo;s Digital Personal Data Protection Act governs <b class="k">personal data</b>:
+data about an identifiable individual. Consent is what makes processing that data lawful, and
+it has to be asked for properly.</p>
 
-<p><b class="k">Off unless you turn it on.</b> After your first index, Claude asks once and
-remembers the answer. Changing your mind deletes the row. No account, no email.</p>
+<p>None of the six numbers is about a person. There is no name, no email, no phone, no
+address, no device, no location, and nothing that could be matched against any of them. The
+one identifier involved is random, made on your machine, and is destroyed on arrival. Nobody
+holding this database, including us, can work out whose row is whose or that any particular
+person has Yellide at all.</p>
 
-<p>Yellide has no screen of its own, so it cannot put the question to you directly. It hands
-Claude the question and asks for it to be read out word for word. We cannot make Claude do
-that. So two things are true instead, and both are on your side:</p>
+<p><b class="k">So there is nothing here to consent to, and we do not pretend otherwise.</b> A
+consent box over data that is not personal is theatre, and it teaches people to click past the
+ones that matter.</p>
+
+<h3>You can still stop it</h3>
+
+<p>Not because the law requires it. Because it is your machine.</p>
+
+<p>Yellide tells you about the counter once, after your first index, in plain words. Tell
+Claude <b class="k">stop the Yellide counter</b> at any time, before or after that, and it
+stops and your row is deleted. No account, no email, no form. Say it again to turn it back
+on.</p>
 
 <div class="log">
-<div class="row"><div class="k">If you are never asked</div><div class="v">Nothing is sent. Silence is a no, not a maybe. Yellide will only send once it holds an answer, and it starts out holding none.</div></div>
-<div class="row"><div class="k">If Claude answers for you</div><div class="v">Yellide refuses it. A yes is only recorded against a question Yellide itself put, so agreement cannot be invented on your behalf.</div></div>
+<div class="row"><div class="k">Before you are told</div><div class="v">Nothing is sent. Yellide records that it has told you at the moment it writes the message, so nobody is counted before the message exists.</div></div>
+<div class="row"><div class="k">After you stop it</div><div class="v">Nothing is sent, ever, and the row is deleted. Claude cannot turn it back on by itself: only you asking does that.</div></div>
 </div>
-
-<p>You also do not have to wait to be asked. Tell Claude <b class="k">stop the Yellide
-counter</b> at any time, before or after any question, and it stops and stays stopped. That is
-as far as we can go, and we would rather say so than imply more.</p>
-
-
 
 <p>All of it is public:
 <a href="https://github.com/urbanmorph/yellide/tree/main/edge">what is stored, and what
@@ -196,7 +201,7 @@ which is why it is the licence.</p>
 </main>
 
 <hr>
-<p class="foot">Free &middot; MIT &middot; v<b class="ver">0.9.19</b> &middot; <a href="https://github.com/urbanmorph/yellide/blob/main/CHANGELOG.md">what changed</a> &middot; <a href="/install">how to update</a></p>
+<p class="foot">Free &middot; MIT &middot; v<b class="ver">0.9.20</b> &middot; <a href="https://github.com/urbanmorph/yellide/blob/main/CHANGELOG.md">what changed</a> &middot; <a href="/install">how to update</a></p>
 
 </div>
 </body>
