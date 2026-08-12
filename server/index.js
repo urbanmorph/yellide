@@ -25,12 +25,13 @@ const NO_DRIVE_MARKER = (() => {
   if (!v || /^\$\{.*\}$/.test(v)) return false;          // not set: keep current behaviour
   return /^(1|true|yes|on)$/i.test(v);
 })();
-let core = null, coreErr = null, storage = null, discover = null, T = null;
+let core = null, coreErr = null, storage = null, discover = null, T = null, contribute = null;
 try {
   core = require('./core.js');
   storage = require('./storage.js');
   discover = require('./discover.js');
   T = require('./tools.js');
+  contribute = require('./contribute.js');
 } catch (e) { coreErr = String(e.stack || e.message); }
 
 // One long-lived read connection on the main thread. Writes happen only in the worker.
@@ -95,21 +96,6 @@ function stampScan(d) {
    .run(new Date().toISOString());
 }
 
-// The caption backlog is housekeeping. Surface it as an offer in the answer, so the user
-// never has to know the phrase "get_work".
-function backlogNote(d) {
-  try {
-    const n = d.prepare(`select count(*) n from (
-      select 1 from asset a join location l on l.asset_id=a.id and l.state='present'
-      where a.kind='image' and not exists (select 1 from annotation x where x.asset_id=a.id and x.key='caption')
-      group by substr(coalesce(a.shot_at_local,a.shot_at),1,10), a.camera)`).get().n;
-    if (!n) return '';
-    return `\n\n${n} shoot${n === 1 ? '' : 's'} have no description yet, so searching by what is *in* a ` +
-           `picture will not find them. Offer to look through them, call get_work, then look, then ` +
-           `write_annotations with propagate:true. A dozen looks can describe thousands of files.`;
-  } catch { return ''; }
-}
-
 function scanStatus(jobId) {
   const j = db().prepare('select * from scan_job where id = ?').get(jobId);
   if (!j) return { error: `no such job ${jobId}` };
@@ -164,19 +150,6 @@ function probeScan(dir, limit) {
     scanning: roots.map(r => r.replace(os.homedir(), '~')),
     note: 'Running in the background. This returned immediately. Ask for status with the job id. Search works on whatever is already indexed.',
   };
-}
-
-function probeSearch(dir, query) {
-  if (!core) return { error: 'core module failed to load' };
-  const allRoots = dir ? [dir] : (probeDiscover({ cap: 400, budget_ms: 25000 }).locations_with_media || []).map(l => l.path);
-  const dbPath = path.join(os.tmpdir(), `yellide-probe-q-${process.pid}.db`);
-  for (const s of ['', '-wal', '-shm']) { try { fs.unlinkSync(dbPath + s); } catch {} }
-  const db = core.openDb(dbPath);
-  for (const rt of allRoots) { try { core.scan(db, rt, 2000); } catch {} }
-  const hits = core.search(db, query, 10);
-  db.close();
-  for (const s of ['', '-wal', '-shm']) { try { fs.unlinkSync(dbPath + s); } catch {} }
-  return { query, hit_count: hits.length, hits };
 }
 
 // Can we find footage WITHOUT the user ever supplying a path? If yes, the folder
@@ -356,13 +329,27 @@ const TOOLS = [
           + 'named 6E098553-3276.jpeg tells the user nothing.' },
       title: { type: 'string', description: 'Heading for the sheet, e.g. the query they asked.' } },
       required: ['ids'] } },
+  { name: 'set_contribution',
+    description:
+      'Record whether the user agrees to contribute anonymous totals to the counter on the Yellide '
+      + 'website. ONLY call this after asking them in plain words and getting a clear answer. Never '
+      + 'assume, never default to yes, and never ask twice. What would be sent: how many images, '
+      + 'videos and audio files are indexed, what percentage can be searched by content, how many '
+      + 'captions exist, the Yellide version, and a random id that is not stored as given. Never a '
+      + 'filename, path, drive name, caption, search term or anything about their machine.',
+    inputSchema: { type: 'object', properties: {
+      consent: { type: 'boolean', description: 'true only if they clearly said yes.' } },
+      required: ['consent'] } },
+  { name: 'stop_contributing',
+    description: 'Withdraw. Deletes their row from the counter and stops sending. Call whenever the '
+      + 'user asks to stop, opt out, or be forgotten.',
+    inputSchema: { type: 'object', properties: {} } },
   { name: 'diagnostics', description:
       'A shareable health report for when something is wrong: version, platform, capabilities, counts, ' +
       'scan errors and a plain list of likely problems. Contains NO filenames, paths, captions or search ' +
       'terms, so the user can safely paste it to whoever is helping them. Show it to them in full.',
     inputSchema: { type: 'object', properties: {} } },
 ];
-
 
 // Claude Desktop surfaces these in its "/" menu. That menu is the closest thing this
 // product has to a front door: there are no menus, no preferences and no empty state,
@@ -424,18 +411,6 @@ function grantedDirs() {
     .map(s => String(s).trim())
     .filter(s => s && !isTemplate(s) && fs.existsSync(s));
 }
-function configProblem() {
-  const raw = [...process.argv.slice(2), process.env.PROBE_DIRS || ''].filter(Boolean);
-  if (raw.some(isTemplate))
-    return { error: 'No folder is configured yet.',
-             detail: 'Claude Desktop passed the placeholder through unexpanded, which means nothing was picked.',
-             fix: 'Settings → Extensions → Yellide Probe → Configure → Browse, and choose a footage folder.',
-             workaround: 'Or call this tool with an explicit path, e.g. probe_scan with path "/Users/you/Movies".',
-             raw_value_received: raw };
-  return { error: 'No folder is configured yet.',
-           fix: 'Settings → Extensions → Yellide Probe → Configure → Browse.',
-           workaround: 'Or pass an explicit path to this tool.' };
-}
 
 let buf = '';
 process.stdin.on('data', c => {
@@ -467,8 +442,11 @@ function handle(req) {
   }
   if (method === 'tools/list') return send({ jsonrpc: '2.0', id, result: { tools: TOOLS } });
   if (method === 'tools/call') {
-    const a = params?.arguments || {}, dir = a.path || grantedDirs()[0];
+    const a = params?.arguments || {};
     let out;
+    // A counter must never make a tool call feel slow, so this is never awaited and every
+    // failure is swallowed. No-op unless the user said yes and an endpoint is configured.
+    try { contribute?.maybeSend(db(), SERVER_VERSION, storage.installId(db()), log); } catch {}
     try {
       const n = params.name;
       // Text-first: results are relayed to a person, so return prose, not nested JSON.
@@ -481,7 +459,17 @@ function handle(req) {
               + `Answers will fill in as it runs. Ask again in a moment.`
             : `\n\n(Refreshing the index in the background, new files will appear shortly.)`)
         : '';
-      if (n === 'describe_archive') out = asText(T.describeArchive(db())) + autoNote;
+      if (n === 'describe_archive') {
+        out = asText(T.describeArchive(db())) + autoNote;
+        // Asked once, ever, and only when there is a finished index worth counting.
+        if (contribute?.shouldAsk(db())) out += '\n\nTHEN ASK THEM THIS, ONCE, in your own words, and '
+          + 'call set_contribution with their answer. Do not push, and do not ask again whatever they say: '
+          + '"Yellide keeps a counter on its website showing how much people have indexed and how much of '
+          + 'it can be searched by content. Would you like your totals added? It would send how many images, '
+          + 'videos and audio files you have, what percentage is searchable, and how many descriptions exist. '
+          + 'Never a filename, a folder, a photograph or anything about your machine. It is off unless you '
+          + 'say yes, and you can stop at any time."';
+      }
       else if (n === 'search') {
         const res = T.search(db(), a.query, a);
         // A content query with nothing to match hands back pictures, not an apology.
@@ -506,6 +494,8 @@ function handle(req) {
         return send({ jsonrpc: '2.0', id, result: { content: T.look(db(), a.ids).blocks } });
       }
       else if (n === 'show_pictures') out = T.showPictures(db(), a.ids, { title: a.title, labels: a.labels }).text;
+      else if (n === 'set_contribution') out = contribute.setConsent(db(), a.consent === true).text;
+      else if (n === 'stop_contributing') out = contribute.forget(db(), storage.installId(db()), log).text;
       else if (n === 'diagnostics')  out = T.diagnosticsReport(db(), { ...probeRuntime(), server_version: SERVER_VERSION }).text;
       else out = { error: 'unknown tool ' + n };
     } catch (e) { out = { error: String(e.message), stack: String(e.stack).split('\n').slice(0, 4) }; }

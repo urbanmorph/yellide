@@ -72,13 +72,6 @@ function describeArchive(db) {
   if (ph) L.push(`Cloud     Separately, ${ph.toLocaleString()} MORE files exist only as iCloud/Dropbox placeholders and ` +
                  `are NOT part of the ${a.files.toLocaleString()} above. They were deliberately never opened, ` +
                  `because reading one downloads it. Everything counted above is a real local file`);
-  const shoots = db.prepare(`select count(*) total,
-      sum(case when described > 0 then 1 else 0 end) done from (
-        select substr(coalesce(a.shot_at_local,a.shot_at),1,10) d, a.camera c,
-               sum(case when exists (select 1 from annotation x where x.asset_id=a.id and x.key='caption') then 1 else 0 end) described
-        from asset a where a.kind in ('image','video') group by d, c)`).get();
-  const captioned = db.prepare(`select count(distinct asset_id) n from annotation
-                                where key in ('caption','shoot_caption')`).get().n;
   const pg = captionProgress(db);
   const undone = pg.shoots_left;
   L.push(`Described ${pg.files_described.toLocaleString()} of ${pg.files_total.toLocaleString()} images and ` +
@@ -324,9 +317,6 @@ function shootPeers(db, id) {
   return rows.filter(r => shootKey(r) === k).map(r => ({ id: r.id }));
 }
 
-function remainingShoots(db) {
-  try { return allShoots(db).filter(g => !g.done).length; } catch { return 0; }
-}
 
 // Progress that tells the truth: how many FILES are still undescribed, how much the next
 // few batches would actually cover, and whether continuing is still worth the money.

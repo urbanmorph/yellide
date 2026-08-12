@@ -11,6 +11,33 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.18] 2026-08-12
+
+### Added
+
+- **You can opt in to the counter, when asked.** After your first index finishes, Claude asks
+  once, in plain words, and remembers the answer either way. `stop_contributing` withdraws
+  and deletes the row. All network code lives in one file, `server/contribute.js`, and the
+  build gate now permits network there and nowhere else, only while that file stays under
+  140 lines, still checks consent before sending, still takes its endpoint from the
+  environment, and never touches a filename, path or annotation value. Verified by breaking
+  each of those four and watching the build refuse.
+- `scripts/fresh-start.sh` wipes the index, the drive markers and the installed extension, so
+  the website can be followed from the top as a stranger would. It prints what will be lost
+  first, including the caption count, and requires typing ERASE.
+- ESLint, run by `pack.sh`. Errors block a build; warnings do not.
+
+### Fixed
+
+- **The counter reported 2% coverage where the diagnostics report said 51%**, because it
+  counted assets carrying a caption row rather than assets a caption covers. A caption
+  propagates across its whole shoot, which is most of the work. Coverage now comes from
+  `captionProgress`, the same function the report uses, so the two cannot disagree. Caught by
+  writing the test first.
+- Dead code ESLint found: `configProblem`, `probeSearch`, `backlogNote`, `remainingShoots`,
+  and two aggregate queries in `describeArchive` whose results were never read but which ran
+  on every call. 51 lines gone.
+
 ## [0.9.17] 2026-08-12
 
 ### Changed
@@ -188,6 +215,7 @@ The first version that does the whole job.
 - Private documents are labelled by type and never by content, and are redacted on export.
 - `export` writes the whole index to plain JSON, so nothing here is a one-way door.
 
+[0.9.18]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.18
 [0.9.17]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.17
 [0.9.16]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.16
 [0.9.15]: https://github.com/urbanmorph/yellide/releases/tag/v0.9.15

@@ -32,7 +32,6 @@ const ALLOWED = [
   { file: 'vision.js',  call: 'mkdirSync',     what: 'that same temp directory' },
   { file: 'storage.js', call: 'mkdirSync',     what: "the app's own data directory, and the .yellide folder on an indexed volume" },
   { file: 'storage.js', call: 'writeFileSync', what: '.yellide/volume-id, one random identifier, so a renamed drive is still recognised' },
-  { file: 'index.js',   call: 'unlinkSync',    what: 'a scratch database in os.tmpdir() named with this process id' },
   { file: 'tools.js',   call: 'writeFileSync', what: 'the export JSON the user asked for, and the contact sheet in the app data directory' },
   { file: 'tools.js',   call: 'mkdirSync',     what: 'the contact-sheet directory inside the app data directory' },
 ];
@@ -63,19 +62,25 @@ const NETWORK = [
   "require('dgram')", "require('node:dgram')", "require('dns')", "require('node:dns')",
   "require('tls')", "require('node:tls')", "require('http2')", "require('node:http2')",
 ];
+// Exactly one file may talk to the network: contribute.js, which sends the counter totals
+// and only after the user has said yes. Confining it means "what can this send, and when"
+// has one place to look. Everything else stays hard-blocked, which is the point.
+const NETWORK_ALLOWED = 'contribute.js';
+
 for (const f of files) {
+  if (f === NETWORK_ALLOWED) continue;
   const src = fs.readFileSync(path.join(SERVER, f), 'utf8');
   src.split('\n').forEach((line, i) => {
     const t = line.trimStart();
     if (t.startsWith('//') || t.startsWith('*')) return;      // a URL in a comment is fine
     const code = line.replace(/\/\/.*$/, '');
     for (const n of NETWORK)
-      if (code.includes(n)) fail.push(`${f}:${i + 1}  ${n} — Yellide makes no network calls`);
-    if (/\bfetch\s*\(/.test(code)) fail.push(`${f}:${i + 1}  fetch() — Yellide makes no network calls`);
+      if (code.includes(n)) fail.push(`${f}:${i + 1}  ${n} . Yellide makes no network calls`);
+    if (/\bfetch\s*\(/.test(code)) fail.push(`${f}:${i + 1}  fetch() . Yellide makes no network calls`);
     if (/\b(XMLHttpRequest|WebSocket|EventSource)\b/.test(code))
-      fail.push(`${f}:${i + 1}  a network client — Yellide makes no network calls`);
+      fail.push(`${f}:${i + 1}  a network client . Yellide makes no network calls`);
     if (/['"`]https?:\/\//.test(code))
-      fail.push(`${f}:${i + 1}  a URL in code — Yellide makes no network calls`);
+      fail.push(`${f}:${i + 1}  a URL in code . Yellide makes no network calls`);
   });
 }
 
@@ -91,6 +96,23 @@ for (const f of files) {
       fail.push(`${f}:${i + 1}  exec() with a string. Use execFile with an argv array`);
     if (/\beval\s*\(|new\s+Function\s*\(/.test(code)) fail.push(`${f}:${i + 1}  evaluates a string as code`);
   });
+}
+
+// The permitted file earns its exemption only while it stays reviewable and keeps its guard.
+{
+  const src = fs.readFileSync(path.join(SERVER, NETWORK_ALLOWED), 'utf8');
+  const lines = src.split('\n').length;
+  if (lines > 140) fail.push(`${NETWORK_ALLOWED} is ${lines} lines. The one file allowed to `
+    + 'reach the network must stay short enough that someone will actually read it.');
+  if (!/consent\(db\) !== 'yes'/.test(src))
+    fail.push(`${NETWORK_ALLOWED} no longer checks consent before sending.`);
+  if (!/ENDPOINT = \(process\.env\.YELLIDE_COUNTER/.test(src))
+    fail.push(`${NETWORK_ALLOWED} no longer takes its endpoint from the environment, so it `
+      + 'could reach somewhere the user never configured.');
+  // Counting captions is the payload. Reading their values, or any path, is not.
+  for (const banned of ['filename', 'rel_path', '.root', 'select value', 'value from annotation'])
+    if (src.includes(banned)) fail.push(`${NETWORK_ALLOWED} reads ${banned}. The payload is counts `
+      + 'only and must never touch content or paths.');
 }
 
 // An allowlist entry that no longer matches anything is rot. Say so.
