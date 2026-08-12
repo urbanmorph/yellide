@@ -26,7 +26,7 @@ fi
 # 0 errors required. Warnings are allowed; errors have shipped before as
 # a name referenced and never defined, which node --check does not catch.
 if command -v npx >/dev/null 2>&1; then
-  npx --no-install eslint server test edge 2>/dev/null | grep -qE "[0-9]+ error" \
+  npx --no-install eslint server test edge 2>/dev/null | grep -qE "[1-9][0-9]* error" \
     && { echo "LINT ERRORS, not building."; npx --no-install eslint server test edge; exit 1; }
 fi
 
