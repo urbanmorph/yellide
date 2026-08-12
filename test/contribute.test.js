@@ -109,6 +109,7 @@ check('an empty index reports zero rather than dividing by it', () => {
 check('sends nothing without consent, and nothing without an endpoint', () => {
   assert.strictEqual(contribute.consent(db), null, 'starts unasked');
   assert.strictEqual(contribute.maybeSend(db, '9.9.9', 'x'), false, 'sent while unasked');
+  contribute.markAsked(db);
   contribute.setConsent(db, true);
   assert.strictEqual(contribute.consent(db), 'yes');
   assert.strictEqual(contribute.maybeSend(db, '9.9.9', 'x'), false,
@@ -119,6 +120,44 @@ check('sends nothing without consent, and nothing without an endpoint', () => {
 
 check('never asks before there is a finished index worth counting', () => {
   assert.strictEqual(contribute.shouldAsk(db), false);
+});
+
+// The question reaches the user through Claude, because Yellide has no screen of its own.
+// That makes set_contribution a tool a model can call on its own initiative, and a yes
+// nobody was asked for is not consent. Declining never needs proof; agreeing does.
+check('a yes is refused unless the question was actually put to the user', () => {
+  const fresh = storage.open(dbPath + '-consent');
+  assert.strictEqual(contribute.consent(fresh), null);
+  contribute.setConsent(fresh, true);
+  assert.strictEqual(contribute.consent(fresh), null,
+    'a model turned the counter on without the question ever being asked');
+  fresh.close();
+  for (const s of ['', '-wal', '-shm']) { try { fs.unlinkSync(dbPath + '-consent' + s); } catch {} }
+});
+
+check('a no is always honoured, asked or not', () => {
+  const fresh = storage.open(dbPath + '-decline');
+  contribute.setConsent(fresh, false);
+  assert.strictEqual(contribute.consent(fresh), 'no', 'a decline was not recorded');
+  fresh.close();
+  for (const s of ['', '-wal', '-shm']) { try { fs.unlinkSync(dbPath + '-decline' + s); } catch {} }
+});
+
+check('a yes is recorded once the question has been put', () => {
+  const fresh = storage.open(dbPath + '-asked');
+  contribute.markAsked(fresh);
+  contribute.setConsent(fresh, true);
+  assert.strictEqual(contribute.consent(fresh), 'yes');
+  fresh.close();
+  for (const s of ['', '-wal', '-shm']) { try { fs.unlinkSync(dbPath + '-asked' + s); } catch {} }
+});
+
+check('the wording put to the user is fixed, not paraphrased by the model', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'server', 'index.js'), 'utf8');
+  assert.ok(!/in your own words/.test(src),
+    'the consent notice is paraphrased by the model, so what the user hears is not what ' +
+    '/privacy says. A notice that changes wording every time is not a notice.');
+  assert.ok(/WORD FOR WORD|verbatim/.test(src), 'nothing tells the model to relay it unchanged');
 });
 
 db.close();

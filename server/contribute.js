@@ -26,7 +26,19 @@ const put = (db, k, v) => db.prepare(
 /** 'yes' | 'no' | null when never asked. */
 const consent = db => get(db, 'contribute');
 
+/**
+ * Recorded when the question has actually been put into a tool result. Yellide has no screen,
+ * so the question reaches the user through Claude, which makes set_contribution a tool a model
+ * can call unprompted. This is the one thing the server can check for itself.
+ */
+const markAsked = db => put(db, 'contribute_asked_at', Date.now());
+
 function setConsent(db, yes) {
+  // A yes nobody was asked for is not consent. A no never needs proving.
+  if (yes && !get(db, 'contribute_asked_at')) {
+    return { text: 'Yellide has not put that question to you yet, so nothing has been turned on. '
+      + 'It will ask once, by itself, after your first index finishes.' };
+  }
   put(db, 'contribute', yes ? 'yes' : 'no');
   return { text: yes
     ? 'Thank you. Your totals will be added to the counter on yellide.pages.dev, and nothing else. '
@@ -101,4 +113,4 @@ function forget(db, installId, log = () => {}) {
   return { text: 'Your row has been deleted and nothing further will be sent.' };
 }
 
-module.exports = { consent, setConsent, shouldAsk, payload, maybeSend, forget, ENDPOINT };
+module.exports = { consent, setConsent, markAsked, shouldAsk, payload, maybeSend, forget, ENDPOINT };

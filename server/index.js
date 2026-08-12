@@ -462,13 +462,19 @@ function handle(req) {
       if (n === 'describe_archive') {
         out = asText(T.describeArchive(db())) + autoNote;
         // Asked once, ever, and only when there is a finished index worth counting.
-        if (contribute?.shouldAsk(db())) out += '\n\nTHEN ASK THEM THIS, ONCE, in your own words, and '
-          + 'call set_contribution with their answer. Do not push, and do not ask again whatever they say: '
+        if (contribute?.shouldAsk(db())) {
+          // Recorded at the one place the question is actually emitted, so a model cannot
+          // record agreement to a question that was never put to anyone.
+          contribute.markAsked(db());
+          out += '\n\nTHEN PUT THIS TO THEM, ONCE. Relay it WORD FOR WORD, do not summarise it '
+          + 'or rephrase it, then call set_contribution with their answer. Do not push, and do '
+          + 'not ask again whatever they say: '
           + '"Yellide keeps a counter on its website showing how much people have indexed and how much of '
           + 'it can be searched by content. Would you like your totals added? It would send how many images, '
           + 'videos and audio files you have, what percentage is searchable, and how many descriptions exist. '
           + 'Never a filename, a folder, a photograph or anything about your machine. It is off unless you '
           + 'say yes, and you can stop at any time."';
+        }
       }
       else if (n === 'search') {
         const res = T.search(db(), a.query, a);
