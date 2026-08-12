@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Yellide privacy: what stays, what leaves, what is written</title>
-<meta name="description" content="Yellide sends nothing unless you switch the counter on, and it ships switched off. Here is exactly what is written to your drives, what leaves your computer, and what is collected: nothing.">
+<meta name="description" content="Yellide sends nothing unless you switch on the counter, and it is off until you do. Here is exactly what is written to your drives, what leaves your computer, and the six numbers the counter sends.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Yellide">
 <meta property="og:title" content="Yellide privacy: what stays, what leaves, what is written">
-<meta property="og:description" content="Yellide sends nothing unless you switch the counter on, and it ships switched off. Here is exactly what is written to your drives, what leaves your computer, and what is collected: nothing.">
+<meta property="og:description" content="Yellide sends nothing unless you switch on the counter, and it is off until you do. Here is exactly what is written to your drives, what leaves your computer, and the six numbers the counter sends.">
 <meta property="og:url" content="https://yellide.pages.dev/privacy">
 <meta property="og:image" content="https://yellide.pages.dev/og.png">
 <meta property="og:image:width" content="1200">
@@ -37,14 +37,13 @@
 exactly what happens to it, in plain terms, with nothing left out.</p>
 
 <h2>What leaves your computer</h2>
-<p><b class="k">Yellide sends nothing.</b> No server, no account, no licence check, no
-update ping.</p>
+<p><b class="k">Nothing, unless you turn on the counter.</b> No account, no licence check,
+no update ping.</p>
 
 <p>Exactly one part of Yellide is able to send anything at all:
 <a href="https://github.com/urbanmorph/yellide/blob/main/server/contribute.js">the counter</a>
-described below. It has never been given anywhere to send to, so it sends nothing. If any
-other part were ever made to send something, an automatic check would refuse to let that
-version out.</p>
+described below, which is off until you say yes. If any other part were ever made to send
+something, an automatic check would refuse to let that version out.</p>
 <p>The one time anything leaves your machine is when you ask Claude to look at your
 pictures. Those images go to your own AI provider, on your own subscription, in your own
 conversation. Yellide is not in the middle of it. Never ask, and nothing ever leaves.</p>
@@ -52,26 +51,23 @@ conversation. Yellide is not in the middle of it. Never ask, and nothing ever le
 
 <h2>What we collect</h2>
 
-<p><b class="k">Nothing, so far.</b> No analytics on this website either: no counter, no
-pixel, no cookie. Nothing has ever been sent, because nothing has ever had anywhere to send
-it to.</p>
+<p><b class="k">Nothing, until you say yes.</b> No analytics on this website either: no
+tracking pixel, no cookie.</p>
 
-<p>Being straight about the code, though: the version you have <em>does</em> contain the
-counter described below. It has nowhere to send to and has never asked you anything, so it does
-nothing. Built and switched off, not absent.</p>
+<p>One exception, described in full below: a counter that adds your totals to a figure on
+the front page, if you say yes when Yellide asks. Six numbers, nothing else, and off until
+then.</p>
 
-<h2>What we would like to collect, and how you will be asked</h2>
+<h2>The one thing we ask to collect</h2>
 
 <p>We want a figure on the front page showing what Yellide achieves across the people
 using it: files indexed, by kind, and how far content search has improved. Cloudflare already
 counts visits. Nothing counts whether the tool then worked.</p>
 
-<p><b class="k">It is switched off, and you have not been asked.</b> The part that would
-send it has never been told where. When that changes you will be asked first, once, and
-nothing moves unless you say yes. This is written down before any of it runs, so objecting
-still changes something.</p>
+<p><b class="k">It is off until you turn it on.</b> After your first index finishes, Yellide
+asks once. Nothing is sent unless you say yes, and it never asks twice.</p>
 
-<h3>Everything it would send</h3>
+<h3>Everything it sends</h3>
 <div class="log">
 <div class="row"><div class="k"><code>install_id</code></div><div class="v">A random value made on your machine. Not your name, not your device, not derived from anything about you.</div></div>
 <div class="row"><div class="k"><code>version</code></div><div class="v">Which version of Yellide.</div></div>
@@ -86,10 +82,14 @@ no search term. No address, no computer name, no operating system, no country, n
 Anything else is refused outright rather than quietly ignored, so a later version cannot
 start sending more without this page changing first.</p>
 
+<p>Once a day at most, and only while you are using Yellide anyway. It is sent in the
+background and never waits, so it cannot make anything feel slower and a failure never
+reaches you.</p>
+
 <p>That random label is not kept either. It is scrambled first, using a key held on the
 server, in a way that cannot be undone. Dates are kept only as a month.</p>
 
-<h3>How you would be asked</h3>
+<h3>How you are asked</h3>
 
 <p><b class="k">Off unless you turn it on.</b> After your first index, Claude asks once and
 remembers the answer. Changing your mind deletes the row. No account, no email.</p>
@@ -110,8 +110,8 @@ as far as we can go, and we would rather say so than imply more.</p>
 
 
 <p>All of it is public:
-<a href="https://github.com/urbanmorph/yellide/tree/main/edge">what would be stored, and what
-would receive it</a>. If any of it looks wrong,
+<a href="https://github.com/urbanmorph/yellide/tree/main/edge">what is stored, and what
+receives it</a>. If any of it looks wrong,
 <a href="https://github.com/urbanmorph/yellide/issues">say so</a>.</p>
 
 <h2>What gets written to your drives</h2>
@@ -196,7 +196,7 @@ which is why it is the licence.</p>
 </main>
 
 <hr>
-<p class="foot">Free &middot; MIT &middot; v<b class="ver">0.9.18</b> &middot; <a href="https://github.com/urbanmorph/yellide/blob/main/CHANGELOG.md">what changed</a> &middot; <a href="/install">how to update</a></p>
+<p class="foot">Free &middot; MIT &middot; v<b class="ver">0.9.19</b> &middot; <a href="https://github.com/urbanmorph/yellide/blob/main/CHANGELOG.md">what changed</a> &middot; <a href="/install">how to update</a></p>
 
 </div>
 </body>

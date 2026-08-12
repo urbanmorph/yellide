@@ -1,0 +1,14 @@
+name = "yellide-counter"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+# The only stored state. PEPPER is a secret, set with `wrangler secret put PEPPER`, and
+# deliberately not here: it is what stops a stored key being walked back to an install_id.
+[[d1_databases]]
+binding = "DB"
+database_name = "yellide-counter"
+database_id = "6a30d187-ddbc-4165-8364-c8aa1a9cc5ee"
+
+# No analytics binding, no logpush, no tail consumer. Nothing observes the requests.
+[observability]
+enabled = false

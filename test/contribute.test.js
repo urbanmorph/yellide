@@ -13,6 +13,10 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+// Set before contribute.js is loaded, because it reads the endpoint once at require time.
+// Without this the suite would post its fixture counts to the live counter.
+process.env.YELLIDE_COUNTER = '';
+
 const storage = require('../server/storage.js');
 const tools = require('../server/tools.js');
 const contribute = require('../server/contribute.js');
@@ -116,6 +120,16 @@ check('sends nothing without consent, and nothing without an endpoint', () => {
     'sent with consent but no endpoint configured');
   contribute.setConsent(db, false);
   assert.strictEqual(contribute.maybeSend(db, '9.9.9', 'x'), false, 'sent after being declined');
+});
+
+check('the shipped build points at the real counter, not at nothing', () => {
+  // The endpoint is blanked above for the rest of this file, so read the source instead.
+  // A release that quietly shipped with no endpoint would pass every other check here and
+  // count nobody, which is exactly the sort of silence this project keeps getting caught by.
+  const src = fs.readFileSync(path.join(__dirname, '..', 'server', 'contribute.js'), 'utf8');
+  const m = src.match(/DEFAULT_ENDPOINT = '([^']*)'/);
+  assert.ok(m, 'DEFAULT_ENDPOINT is gone');
+  assert.ok(/^https:\/\/\S+$/.test(m[1]), `DEFAULT_ENDPOINT is ${JSON.stringify(m[1])}`);
 });
 
 check('never asks before there is a finished index worth counting', () => {

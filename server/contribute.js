@@ -4,18 +4,17 @@
 // means the question "what can this send, and when" has one place to look, and a reviewer
 // reads eighty lines rather than the whole server.
 //
-// It sends nothing unless BOTH are true:
-//   1. the user said yes when asked, once, after their first index finished
-//   2. YELLIDE_COUNTER names an endpoint
-//
-// With no endpoint configured this file is inert. That is the shipped default.
+// It sends nothing until the user has said yes, once, to a question Yellide itself put to
+// them after their first index finished. Never asked and never answered both mean no, so a
+// model that stays silent cannot cause anything to be sent.
 
-// Where the counter lives. Empty means this file is inert, which is the shipped default
-// until the Worker in edge/ is deployed. It is a constant rather than user configuration
-// so that consent is the only thing a user has to think about, and a URL cannot be pointed
-// somewhere it was never meant to go.
-const DEFAULT_ENDPOINT = '';
-const ENDPOINT = (process.env.YELLIDE_COUNTER || DEFAULT_ENDPOINT).trim().replace(/\/$/, '');
+// Where the counter lives. A constant rather than user configuration, so consent is the only
+// thing anyone has to think about and the address cannot be pointed somewhere it was never
+// meant to go. The env var exists so the tests and a fork can aim it elsewhere.
+const DEFAULT_ENDPOINT = 'https://yellide-counter.knerav.workers.dev';
+// `??`, not `||`: setting YELLIDE_COUNTER to an empty string switches the counter off
+// entirely. The tests rely on that, and so would anyone who wants it gone from a build.
+const ENDPOINT = (process.env.YELLIDE_COUNTER ?? DEFAULT_ENDPOINT).trim().replace(/\/$/, '');
 const { captionProgress } = require('./tools.js');
 const DAY = 24 * 60 * 60 * 1000;
 

@@ -189,5 +189,5 @@ if (fail.length) {
 }
 
 console.log(`safety: ${files.length} files, ${seen.size} justified writes, no shell, no eval,`
-  + ` drive marker refusable, no network, no tracked secrets`);
+  + ` drive marker refusable, network only in contribute.js, no tracked secrets`);
 for (const a of ALLOWED) console.log(`  ${a.file.padEnd(12)} ${(a.call + '()').padEnd(16)} ${a.what}`);
