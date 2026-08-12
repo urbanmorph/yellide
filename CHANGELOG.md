@@ -11,6 +11,26 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.23] 2026-08-12
+
+### Added
+
+- **`import_photo_albums`.** The macOS Photos app holds album names you typed yourself. This
+  reads them and tags the matching files, so "Upanayanam" and "Darjeeling 26th Tiger hill,
+  Batasia loop" find their photographs instead of nothing. On the archive it was built
+  against: 363 files across 12 albums, in eight seconds, with no picture looked at.
+
+  Albums named for a date, or for the app the files arrived from, are ignored: on that same
+  library those were 1,621 files under "WhatsApp" and 626 under "Instagram", names that say
+  nothing about any of them.
+
+  They land as **tags, never captions**, and the content coverage figure deliberately does not
+  move. A percentage that rises on work nobody did is worse than one that stays honest.
+
+  The library is opened read-only and nothing is ever written back to it. Files that are in
+  Photos but only in iCloud cannot be tagged, and it says how many; Yellide still never
+  downloads them.
+
 ## [0.9.21] 2026-08-12
 
 ### Fixed

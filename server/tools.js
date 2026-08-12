@@ -576,6 +576,8 @@ module.exports.look = look;
 module.exports.writeAnnotations = writeAnnotations;
 module.exports.reindex = reindex;
 module.exports.visionCapability = vision.capability;
+// Anything that writes an annotation must call this, or the text is stored and never found.
+module.exports.reindex = reindex;
 
 
 // ============================================================ diagnostics

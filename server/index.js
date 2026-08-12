@@ -25,12 +25,14 @@ const NO_DRIVE_MARKER = (() => {
   if (!v || /^\$\{.*\}$/.test(v)) return false;          // not set: keep current behaviour
   return /^(1|true|yes|on)$/i.test(v);
 })();
-let core = null, coreErr = null, storage = null, discover = null, T = null, contribute = null;
+let core = null, coreErr = null, storage = null, discover = null, T = null, contribute = null,
+    photos = null;
 try {
   core = require('./core.js');
   storage = require('./storage.js');
   discover = require('./discover.js');
   T = require('./tools.js');
+  photos = require('./photos.js');
   contribute = require('./contribute.js');
 } catch (e) { coreErr = String(e.stack || e.message); }
 
@@ -337,6 +339,16 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: {
       consent: { type: 'boolean', description: 'true only if they asked to turn it back on.' } },
       required: ['consent'] } },
+  { name: 'import_photo_albums',
+    description:
+      'Free labels, no looking required. The macOS Photos app holds album names the user typed '
+      + 'themselves, like "Upanayanam" or "Darjeeling, Tiger hill, Batasia loop". This reads them '
+      + 'and tags the matching files so they become searchable. Albums named for a date, or for '
+      + 'the app the files arrived from, are ignored. Reads the Photos library and never writes '
+      + 'to it. Safe to run again; it adds only what is missing. These are tags, NOT descriptions '
+      + 'of what is in each frame, so content coverage does not move and you must not say it has.',
+    inputSchema: { type: 'object', properties: {} } },
+
   { name: 'stop_contributing',
     description: 'Stop the website counter and delete their row from it. Call whenever the user '
       + 'asks to stop, opt out, or be forgotten. Nothing further is sent, ever.',
@@ -499,6 +511,7 @@ function handle(req) {
       }
       else if (n === 'show_pictures') out = T.showPictures(db(), a.ids, { title: a.title, labels: a.labels }).text;
       else if (n === 'set_contribution') out = contribute.setConsent(db(), a.consent === true).text;
+      else if (n === 'import_photo_albums') out = photos.importAlbums(db()).text;
       else if (n === 'stop_contributing') out = contribute.forget(db(), storage.installId(db()), log).text;
       else if (n === 'diagnostics')  out = T.diagnosticsReport(db(), { ...probeRuntime(), server_version: SERVER_VERSION }).text;
       else out = { error: 'unknown tool ' + n };

@@ -75,12 +75,12 @@ for (const f of files) {
     if (t.startsWith('//') || t.startsWith('*')) return;      // a URL in a comment is fine
     const code = line.replace(/\/\/.*$/, '');
     for (const n of NETWORK)
-      if (code.includes(n)) fail.push(`${f}:${i + 1}  ${n} . Yellide makes no network calls`);
-    if (/\bfetch\s*\(/.test(code)) fail.push(`${f}:${i + 1}  fetch() . Yellide makes no network calls`);
+      if (code.includes(n)) fail.push(`${f}:${i + 1}  ${n} . Only contribute.js may reach the network`);
+    if (/\bfetch\s*\(/.test(code)) fail.push(`${f}:${i + 1}  fetch() . Only contribute.js may reach the network`);
     if (/\b(XMLHttpRequest|WebSocket|EventSource)\b/.test(code))
-      fail.push(`${f}:${i + 1}  a network client . Yellide makes no network calls`);
+      fail.push(`${f}:${i + 1}  a network client . Only contribute.js may reach the network`);
     if (/['"`]https?:\/\//.test(code))
-      fail.push(`${f}:${i + 1}  a URL in code . Yellide makes no network calls`);
+      fail.push(`${f}:${i + 1}  a URL in code . Only contribute.js may reach the network`);
   });
 }
 
