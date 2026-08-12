@@ -292,7 +292,7 @@ const TOOLS = [
   { name: 'look', description:
       'Returns the actual images SO THAT YOU CAN SEE THEM. The user cannot, these do not render in their chat. To show THEM, call show_pictures. This is how content questions ' +
       'get answered, "people walking", "a red car", "golden hour". You look, then write what you saw with ' +
-      'write_annotations, and it becomes searchable. Pass ids from get_work or search. Max 12 at a time.',
+      'write_annotations, and it becomes searchable. Pass ids from get_work or search. Pass as many as you like: it fills a size budget and tells you how many did not fit, so send the rest in the next call rather than guessing a batch size.',
     inputSchema: { type: 'object', properties: {
       ids: { type: 'array', items: { type: 'number' } } }, required: ['ids'] } },
 
@@ -322,7 +322,7 @@ const TOOLS = [
       + 'does not render them in the chat. Never say "shown above" after `look`; call this instead, then '
       + 'tell them you have opened it.',
     inputSchema: { type: 'object', properties: {
-      ids: { type: 'array', items: { type: 'integer' }, description: 'Asset ids, up to 60.' },
+      ids: { type: 'array', items: { type: 'integer' }, description: 'Asset ids, up to 250. Pass the whole result set rather than curating it down; the sheet says so when it holds fewer than you sent.' },
       labels: { type: 'array', items: { type: 'string' },
         description: 'One short description per id, in the same order. If you have just looked at '
           + 'these, PASS WHAT YOU SAW, otherwise the sheet shows only a filename, which for a photo '

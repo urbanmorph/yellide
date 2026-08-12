@@ -11,6 +11,28 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.21] 2026-08-12
+
+### Fixed
+
+- **`look` overflowed the tool-result ceiling and the whole call failed.** Twelve thumbnails
+  at 768px from a real Photos library came to 1.54 MB against a 1 MB limit, so the batch was
+  lost and nothing said why. A failed look is pictures that never get described, which is the
+  one thing this tool exists to do. Images are budgeted in bytes now, not counted, at 640px:
+  about 31 per call instead of 12, and it reports how many did not fit.
+- **`caption_next` offered 6 shoots and never more than 10**, a cap sized to the old
+  twelve-image limit. It was the only thing still holding a round to roughly 24 files, which
+  put a half-described archive 150 rounds from useful. Now 30, bounded by the payload budget.
+- **It stopped after every round to ask.** It now says to keep going in the same turn and
+  report once, because every round handed back costs the user a prompt.
+- **"I can raise that to 69% in a few minutes" could not happen.** The estimate sorted shoots
+  by size while `get_work` sorted by `is_shot` first, so it described a batch nobody would be
+  given. Both use one ordering now, the estimate says three rounds rather than a duration
+  nobody can predict, and on this machine it went from claiming 69% to stating 54%.
+- **The contact sheet silently dropped everything past 60.** That cap was the tool-result
+  ceiling leaking into something written to a file and opened in a browser. Now 250, and it
+  says on the sheet and to the model when more matched than it holds.
+
 ## [0.9.20] 2026-08-12
 
 ### Changed

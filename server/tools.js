@@ -79,9 +79,11 @@ function describeArchive(db) {
          `camera and folder only.`);
   if (undone > 0 && pg.worth_continuing) L.push(
     `\nEND YOUR REPLY WITH EXACTLY THIS OFFER, in your own words but keeping the numbers: ` +
-    `"${pg.pct}% of your photos and videos can be searched by content. I can raise that to about ` +
-    `${Math.min(99, pg.pct + Math.round(100 * pg.next_3_batches_cover / pg.files_total))}% in a few minutes ` +
-    `, shall I?" If they agree, call caption_next and then write_annotations for EVERY picture you are ` +
+    `"${pg.pct}% of your photos and videos can be searched by content. The next three rounds would ` +
+    `take that to about ` +
+    `${Math.min(99, pg.pct + Math.round(100 * pg.next_3_batches_cover / pg.files_total))}%, shall I?" ` +
+    `Do not promise a time; you cannot know how long it takes. If they agree, call caption_next and ` +
+    `then write_annotations for EVERY picture you are ` +
     `shown, looping until coverage stops rising meaningfully. Describing a picture without calling ` +
     `write_annotations wastes the work entirely, the description is lost the moment this chat ends. ` +
     `Do not quote shoot counts; ${pg.singletons_left.toLocaleString()} remaining shoots are single files.`);
@@ -320,12 +322,20 @@ function shootPeers(db, id) {
 
 // Progress that tells the truth: how many FILES are still undescribed, how much the next
 // few batches would actually cover, and whether continuing is still worth the money.
+// One ordering, used by both the work queue and the estimate of what that queue will cover.
+const WORK_ORDER = (a, b) => b.is_shot - a.is_shot || b.size - a.size;
+const BATCH = 30;
+
 function captionProgress(db) {
   const g = allShoots(db);
-  const done = g.filter(x => x.done), left = g.filter(x => !x.done).sort((a, b) => b.size - a.size);
+  const done = g.filter(x => x.done);
+  // The SAME ordering get_work serves, not a second one that happens to look similar. This
+  // sorted by size alone while get_work sorted by is_shot first, so the projection described
+  // a batch nobody was ever going to be given, and promised a number that could not arrive.
+  const left = g.filter(x => !x.done).sort(WORK_ORDER);
   const total = g.reduce((a, x) => a + x.size, 0);
   const covered = done.reduce((a, x) => a + x.size, 0);
-  const next3 = left.slice(0, 18).reduce((a, x) => a + x.size, 0);   // 3 batches of 6
+  const next3 = left.slice(0, 3 * BATCH).reduce((a, x) => a + x.size, 0);
   const singles = left.filter(x => x.size === 1).length;
   return {
     files_total: total, files_described: covered,
@@ -341,8 +351,12 @@ function captionProgress(db) {
 // A whole archive gets described a batch at a time. This returns the next unlabelled
 // shoots AND their pictures in one call, so the agent can loop: caption_next → write →
 // caption_next, without a round trip in between.
+// 6 shoots by default and never more than 10 was sized to a look() that could carry twelve
+// images. look() budgets bytes now and fits about thirty, and the old cap was the only thing
+// still holding a round to roughly 24 files. At that rate a half-described archive needed 150
+// more rounds, which is not a tool, it is a chore.
 function captionNext(db, opts = {}) {
-  const n = Math.min(opts.limit || 6, 10);
+  const n = Math.min(opts.limit || BATCH, 40);
   const work = getWork(db, { kind: opts.kind, limit: n });
   if (!work.data || !work.data.length) {
     return { blocks: [{ type: 'text', text: 'Everything has been described. Nothing left to look at.' }] };
@@ -355,7 +369,11 @@ function captionNext(db, opts = {}) {
       `Here are ${work.data.length} shoots nobody has looked at, covering about ${covered} files.\n\n` +
       `For EACH picture: describe it, then call write_annotations with {id, caption, tags, propagate:true}. ` +
       `**A description you only write in your reply is thrown away**. Nothing is saved unless ` +
-      `write_annotations is called. The caption then covers that whole shoot. Then call caption_next again.\n` +
+      `write_annotations is called. The caption then covers that whole shoot.\n\n` +
+      `THEN CALL caption_next AGAIN, IN THIS SAME TURN, and keep going without stopping to ask. ` +
+      `Every round you hand back to the user costs them a prompt, and there are thousands of files ` +
+      `left. Do several rounds, then report once: what you described, the percentage now, and that ` +
+      `you can carry on. Stop early only if you hit something private, or they told you a limit.\n` +
       `Progress: ${pg.files_described.toLocaleString()} of ${pg.files_total.toLocaleString()} files ` +
       `(${pg.pct}%) are described. Report percentages, never shoot counts, most remaining shoots are ` +
       `single files, so a shoot count wildly overstates what is left.` },
@@ -407,7 +425,7 @@ function getWork(db, opts = {}) {
   const limit = Math.min(opts.limit || 12, 40);
   const shoots = allShoots(db, opts.kind)
     .filter(g => !g.done)
-    .sort((a, b) => b.is_shot - a.is_shot || b.size - a.size)
+    .sort(WORK_ORDER)
     .slice(0, limit);
   if (!shoots.length) return { text: 'Nothing left to look at, every shoot already has a description.', data: [] };
   const rows = shoots.map(g => ({ ...g.rep, cluster_size: g.size,
@@ -419,25 +437,41 @@ function getWork(db, opts = {}) {
 }
 
 // Returns real image content blocks, so the agent actually sees the pictures.
+// A tool result has a size ceiling, and twelve frames from a real Photos library came to
+// 1.54 MB against it: the call failed outright, so a batch of pictures went undescribed and
+// nothing said why. Images are budgeted in bytes now, not counted, because a 71 KB frame and
+// a 200 KB frame were never interchangeable. 640px at quality 50 is still more than enough to
+// say what is in a photograph, and roughly halves the cost of saying it.
+const LOOK_BUDGET = 800 * 1024;
+const LOOK_SIZE = 640, LOOK_QUALITY = 50;
+
 function look(db, ids) {
   const cap = vision.capability();
   if (!cap.ok) return { blocks: [{ type: 'text', text: cap.reason }] };
-  const list = (Array.isArray(ids) ? ids : [ids]).slice(0, 12);
+  const list = Array.isArray(ids) ? ids : [ids];
   const blocks = [];
-  let shown = 0, skipped = 0;
+  let shown = 0, skipped = 0, spent = 0, deferred = 0;
   for (const id of list) {
+    // Stop on the budget, never mid-image. Whatever is left is reported, not dropped.
+    if (spent >= LOOK_BUDGET) { deferred++; continue; }
     const a = db.prepare('select id, kind from asset where id = ?').get(id);
     if (!a) { skipped++; continue; }
     if (a.kind !== 'image' && a.kind !== 'video') { blocks.push({ type: 'text', text: `id ${id}: ${a.kind} has no picture to show.` }); skipped++; continue; }
     const { best } = locationsFor(db, id);
     if (!best || best.state !== 'present') { blocks.push({ type: 'text', text: `id ${id}: not on disk right now.` }); skipped++; continue; }
-    const b64 = a.kind === 'video' ? vision.videoFrame(fullPath(best)) : vision.thumbnail(fullPath(best));
+    const b64 = a.kind === 'video'
+      ? vision.videoFrame(fullPath(best), LOOK_SIZE, LOOK_QUALITY)
+      : vision.thumbnail(fullPath(best), LOOK_SIZE, LOOK_QUALITY);
     if (!b64) { skipped++; continue; }
+    if (shown && spent + b64.length > LOOK_BUDGET) { deferred++; spent = LOOK_BUDGET; continue; }
+    spent += b64.length;
     blocks.push({ type: 'text', text: `id ${id}, ${best.filename}` });
     blocks.push({ type: 'image', data: b64, mimeType: 'image/jpeg' });
     shown++;
   }
-  blocks.push({ type: 'text', text: `${shown} shown${skipped ? `, ${skipped} skipped` : ''}. ` +
+  blocks.push({ type: 'text', text: `${shown} shown${skipped ? `, ${skipped} skipped` : ''}` +
+    (deferred ? `, ${deferred} more did not fit. Describe these, save them, then call look again `
+              + `with the rest, or nothing will ever be written for them.` : '.') + ' ' +
     `Describe what you actually see, subjects, action, setting, light. Then call write_annotations ` +
     `with one caption per id. Say only what is visible; do not guess names, places or events.\n\n` +
     `PRIVACY. This matters, personal archives contain more than photographs. If an image is a ` +
@@ -617,11 +651,19 @@ module.exports.diagnosticsReport = diagnosticsReport;
 //
 // Self-contained HTML with the thumbnails inlined as data URIs — no server, no
 // network, nothing to clean up but one file.
+// The sheet renders in a 260px grid, so 512px is already generous, and 250 frames of it is
+// about 12 MB of HTML: heavy for a file, nothing at all for a browser.
+const SHEET_MAX = 250, SHEET_SIZE = 512, SHEET_QUALITY = 50;
+
 function showPictures(db, ids, opts = {}) {
   const cap = vision.capability();
   if (!cap.ok) return { text: cap.reason };
 
-  const list = (Array.isArray(ids) ? ids : [ids]).slice(0, 60);
+  // Written to a file and opened in a browser, so the tool-result ceiling does not apply.
+  // The old cap of 60 was that ceiling leaking into somewhere it never belonged.
+  const all = Array.isArray(ids) ? ids : [ids];
+  const list = all.slice(0, SHEET_MAX);
+  const overflow = all.length - list.length;
   // The agent has usually just LOOKED at these and holds descriptions that are not saved
   // yet. Without them the sheet shows a UUID filename, which tells the user nothing about
   // a photograph. Accept either a parallel array or an {id: label} map.
@@ -636,7 +678,8 @@ function showPictures(db, ids, opts = {}) {
     const { best } = locationsFor(db, id);
     if (!best || best.state !== 'present') { missing++; continue; }
     const p = fullPath(best);
-    const b64 = a.kind === 'video' ? vision.videoFrame(p) : vision.thumbnail(p);
+    const b64 = a.kind === 'video' ? vision.videoFrame(p, SHEET_SIZE, SHEET_QUALITY)
+                                   : vision.thumbnail(p, SHEET_SIZE, SHEET_QUALITY);
     if (!b64) { missing++; continue; }
     const saved = db.prepare(
       "select value from annotation where asset_id=? and key='caption' order by rowid desc limit 1").get(id);
@@ -669,7 +712,7 @@ a{color:inherit;text-decoration:none}
 a:hover figure{border-color:#2dd4bf}
 </style>
 <h1>${title}</h1>
-<p class="sub">${cards.length} of ${list.length} shown${missing ? ` &middot; ${missing} not on disk` : ''}
+<p class="sub">${cards.length} of ${all.length} shown${missing ? ` &middot; ${missing} not on disk` : ''}${overflow ? ` &middot; ${overflow} more matched than this sheet holds` : ''}
 &middot; click any frame to reveal it in Finder</p>
 <div class="grid">
 ${cards.map(c => `<a href="file://${encodeURI(c.path)}"><figure>
@@ -691,7 +734,9 @@ ${cards.map(c => `<a href="file://${encodeURI(c.path)}"><figure>
 
   return {
     text: `Opened a contact sheet with ${cards.length} picture${cards.length === 1 ? '' : 's'}`
-        + (missing ? ` (${missing} not on disk right now)` : '') + '.'
+        + (missing ? ` (${missing} not on disk right now)` : '')
+        + (overflow ? `. ${overflow} more were passed than one sheet holds, so TELL THE USER `
+                    + `the sheet is a selection and say how many matched in total` : '') + '.'
         + (opened ? ' It should be in your browser now, click any frame to reveal it in Finder.'
                   : ` Open this file yourself: ${file}`)
         + `\n\nTell the user you have OPENED it, not that it is shown in this chat, pictures`
