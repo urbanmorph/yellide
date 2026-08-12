@@ -40,10 +40,11 @@ exactly what happens to it, in plain terms, with nothing left out.</p>
 <p><b class="k">Yellide sends nothing.</b> No server, no account, no licence check, no
 update ping.</p>
 
-<p>One file,
-<a href="https://github.com/urbanmorph/yellide/blob/main/server/contribute.js"><code>contribute.js</code></a>,
-could reach the network. It ships with no address, so it does not. A network call anywhere
-else fails the build.</p>
+<p>Exactly one part of Yellide is able to send anything at all:
+<a href="https://github.com/urbanmorph/yellide/blob/main/server/contribute.js">the counter</a>
+described below. It has never been given anywhere to send to, so it sends nothing. If any
+other part were ever made to send something, an automatic check would refuse to let that
+version out.</p>
 <p>The one time anything leaves your machine is when you ask Claude to look at your
 pictures. Those images go to your own AI provider, on your own subscription, in your own
 conversation. Yellide is not in the middle of it. Never ask, and nothing ever leaves.</p>
@@ -56,8 +57,8 @@ pixel, no cookie. Nothing has ever been sent, because nothing has ever had anywh
 it to.</p>
 
 <p>Being straight about the code, though: the version you have <em>does</em> contain the
-counter described below. It ships with no address and has never asked you anything, so it
-does nothing at all. It is built and switched off, not absent.</p>
+counter described below. It has nowhere to send to and has never asked you anything, so it does
+nothing. Built and switched off, not absent.</p>
 
 <h2>What we would like to collect, and how you will be asked</h2>
 
@@ -65,10 +66,10 @@ does nothing at all. It is built and switched off, not absent.</p>
 using it: files indexed, by kind, and how far content search has improved. Cloudflare already
 counts visits. Nothing counts whether the tool then worked.</p>
 
-<p><b class="k">It is switched off, and you have not been asked.</b> The code that would
-send it exists and ships with no address, so it has nowhere to send and does nothing. When
-that changes you will be asked first, once, and nothing moves unless you say yes. This is
-written down before any of it runs, so that objecting to it still changes something.</p>
+<p><b class="k">It is switched off, and you have not been asked.</b> The part that would
+send it has never been told where. When that changes you will be asked first, once, and
+nothing moves unless you say yes. This is written down before any of it runs, so objecting
+still changes something.</p>
 
 <h3>Everything it would send</h3>
 <div class="log">
@@ -80,14 +81,13 @@ written down before any of it runs, so that objecting to it still changes someth
 <div class="row"><div class="k"><code>captions</code></div><div class="v">How many descriptions have been written.</div></div>
 </div>
 
-<p>Six numbers, a version, and one random string. No filename, no folder, no path, no drive label, no
-caption, no search term, no photograph. No IP address, no hostname, no operating system, no
-locale, no timezone. The endpoint <b class="k">rejects</b> anything outside that list rather
-than ignoring it, so a later version cannot quietly begin sending more.</p>
+<p>Six numbers, the version, and one random label. No filename, no folder, no photograph,
+no search term. No address, no computer name, no operating system, no country, no time zone.
+Anything else is refused outright rather than quietly ignored, so a later version cannot
+start sending more without this page changing first.</p>
 
-<p>Your <code>install_id</code> is not stored. What is stored is a one way hash of it and a
-server secret, which cannot be turned back into anything about your machine. Dates are kept
-as a month.</p>
+<p>That random label is not kept either. It is scrambled first, using a key held on the
+server, in a way that cannot be undone. Dates are kept only as a month.</p>
 
 <h3>How you would be asked</h3>
 
@@ -96,8 +96,9 @@ remembers the answer. Changing your mind deletes the row. No account, no email.<
 
 
 
-<p><a href="https://github.com/urbanmorph/yellide/tree/main/edge">The schema and the
-endpoint are public</a>. If any of it looks wrong,
+<p>All of it is public:
+<a href="https://github.com/urbanmorph/yellide/tree/main/edge">what would be stored, and what
+would receive it</a>. If any of it looks wrong,
 <a href="https://github.com/urbanmorph/yellide/issues">say so</a>.</p>
 
 <h2>What gets written to your drives</h2>
@@ -149,18 +150,21 @@ write and every delete the software performs</b>. There are no others:</p>
 <div class="row"><div class="k">the file you name</div><div class="v">Only when you ask for an export.</div></div>
 </div>
 
-<p><b class="k">Every delete targets a path Yellide built itself</b> in the temporary
-folder, with its own process id in the name. None of them can name a file of yours.</p>
+<p><b class="k">Every one of those deletions is of a file Yellide made moments earlier</b>,
+in the system scratch folder, under a name only that run could have chosen. None of them can
+name a file of yours.</p>
 
-<p>External programs, only <code>sips</code> and <code>qlmanage</code>, both built into
-macOS, plus <code>open</code> to reveal a file, are run with an argument list, never a
-shell command. A filename containing <code>; rm -rf ~</code> is a filename, not an
-instruction. Nothing in Yellide evaluates a string as code.</p>
+<p>Yellide runs three programs that already come with macOS: <code>sips</code> and
+<code>qlmanage</code> to make thumbnails, and <code>open</code> to show you a file in Finder.
+Each is handed your filename as its own separate piece of information, rather than pasted into a
+line of text that the Mac then reads back and obeys. So a file named
+<code>; rm -rf ~</code> is only a file with an odd name. Yellide never builds an instruction out
+of your filenames, and never treats text as something to run.</p>
 
 <p>None of that is a promise you have to take.
-<a href="https://github.com/urbanmorph/yellide/blob/main/test/safety.test.js">A test enforces
-it</a>: every write above is listed there, and a version that adds one that is not on the list
-does not build.</p>
+<a href="https://github.com/urbanmorph/yellide/blob/main/test/safety.test.js">An automatic
+check</a> holds it: every write listed above is named there, and a version that writes
+anywhere else cannot be released.</p>
 
 <div class="note">What this cannot protect you from: Yellide runs beside whatever else you
 have installed. It cannot stop another extension, or any other tool, from deleting your
