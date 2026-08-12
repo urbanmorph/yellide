@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Yellide privacy: what stays, what leaves, what is written</title>
-<meta name="description" content="Yellide makes no network calls. Here is exactly what is written to your drives, what leaves your computer, and what is collected: nothing.">
+<meta name="description" content="Yellide sends nothing unless you switch the counter on, and it ships switched off. Here is exactly what is written to your drives, what leaves your computer, and what is collected: nothing.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Yellide">
 <meta property="og:title" content="Yellide privacy: what stays, what leaves, what is written">
-<meta property="og:description" content="Yellide makes no network calls. Here is exactly what is written to your drives, what leaves your computer, and what is collected: nothing.">
+<meta property="og:description" content="Yellide sends nothing unless you switch the counter on, and it ships switched off. Here is exactly what is written to your drives, what leaves your computer, and what is collected: nothing.">
 <meta property="og:url" content="https://yellide.pages.dev/privacy">
 <meta property="og:image" content="https://yellide.pages.dev/og.png">
 <meta property="og:image:width" content="1200">
@@ -37,33 +37,34 @@
 exactly what happens to it, in plain terms, with nothing left out.</p>
 
 <h2>What leaves your computer</h2>
-<p><b class="k">Yellide makes no network calls at all.</b> There is no server to talk to, no
-account, no licence check and no update ping. You can confirm this yourself: the whole thing is
-about <b class="loc">2,452</b> lines of JavaScript and it imports no networking library.</p>
-<p>The one time anything leaves your machine is when <em>you</em> ask Claude to look at your
-pictures so it can describe them. Those images go to your own AI provider, through your own
-subscription, in your own conversation, the same path as any image you paste into a chat
-yourself. Yellide is not in the middle of it and never sees it.</p>
+<p><b class="k">Yellide sends nothing.</b> No server, no account, no licence check, no
+update ping.</p>
+
+<p>One file,
+<a href="https://github.com/urbanmorph/yellide/blob/main/server/contribute.js"><code>contribute.js</code></a>,
+could reach the network. It ships with no address, so it does not. A network call anywhere
+else fails the build.</p>
+<p>The one time anything leaves your machine is when you ask Claude to look at your
+pictures. Those images go to your own AI provider, on your own subscription, in your own
+conversation. Yellide is not in the middle of it. Never ask, and nothing ever leaves.</p>
 <p>If you never ask for descriptions, nothing ever leaves.</p>
 
 <h2>What we collect</h2>
 
 <p><b class="k">Nothing.</b> There are no analytics on this website either, no counter, no
-pixel, no cookie. Yellide itself makes no network calls, and the build refuses to produce a
-version that does, so this is not a policy that could quietly lapse.</p>
+pixel, no cookie. Nothing has ever been collected, because nothing has ever had anywhere to
+send.</p>
 
 <h2>What we would like to collect, and how you will be asked</h2>
 
-<p>We want to put a figure on the front page saying what Yellide achieves across the people
-using it: how many files have been indexed, split by kind, and how far searching by content
-has improved since each install started. Cloudflare already tells us how many people visit
-this site and roughly where from. Nothing tells us whether the tool then worked, and that is
-the only gap this would fill.</p>
+<p>We want a figure on the front page showing what Yellide achieves across the people
+using it: files indexed, by kind, and how far content search has improved. Cloudflare already
+counts visits. Nothing counts whether the tool then worked.</p>
 
-<p><b class="k">It is not built, and today it cannot be.</b> There is no code in Yellide that
-sends anything, and the test that fails the build on any network call is still in force. This
-is written down before it exists rather than after, so you can object while objecting still
-changes something.</p>
+<p><b class="k">It is switched off, and you have not been asked.</b> The code that would
+send it exists and ships with no address, so it has nowhere to send and does nothing. When
+that changes you will be asked first, once, and nothing moves unless you say yes. This is
+written down before any of it runs, so that objecting to it still changes something.</p>
 
 <h3>Everything it would send</h3>
 <div class="log">
@@ -80,23 +81,19 @@ caption, no search term, no photograph. No IP address, no hostname, no operating
 locale, no timezone. The endpoint <b class="k">rejects</b> anything outside that list rather
 than ignoring it, so a later version cannot quietly begin sending more.</p>
 
-<p>Your <code>install_id</code> would not be stored. What is stored is a one-way hash of it
-combined with a secret held on the server, so the stored key cannot be turned back into
-anything about your machine. Dates are kept as a month, never a moment.</p>
+<p>Your <code>install_id</code> is not stored. What is stored is a one way hash of it and a
+server secret, which cannot be turned back into anything about your machine. Dates are kept
+as a month.</p>
 
 <h3>How you would be asked</h3>
 
-<p><b class="k">Off unless you turn it on.</b> After your first index finishes, Claude would
-ask you once, in plain words, and remember your answer so it never asks again. Saying no
-costs you nothing and changes nothing about how Yellide works.</p>
+<p><b class="k">Off unless you turn it on.</b> After your first index, Claude asks once and
+remembers the answer. Changing your mind deletes the row. No account, no email.</p>
 
-<p>Changing your mind removes the row. There is no account to log into and no email to send,
-because a right to be forgotten that first requires you to identify yourself is not much of a
-right.</p>
 
-<p>The schema, the endpoint and its rules are already public and readable:
-<a href="https://github.com/urbanmorph/yellide/tree/main/edge">three files, one of them the
-schema itself</a>. If any of it looks wrong to you,
+
+<p><a href="https://github.com/urbanmorph/yellide/tree/main/edge">The schema and the
+endpoint are public</a>. If any of it looks wrong,
 <a href="https://github.com/urbanmorph/yellide/issues">say so</a>.</p>
 
 <h2>What gets written to your drives</h2>
@@ -112,17 +109,15 @@ schema itself</a>. If any of it looks wrong to you,
 <h3>A marker on each drive you index</h3>
 <p>When Yellide indexes an external drive it writes one small file to it:</p>
 <pre><code>&lt;drive&gt;/.yellide/volume-id</code></pre>
-<p>It contains a single random identifier and nothing else, no filenames, no descriptions, no
-information about you. It exists so that Yellide still recognises the drive after you rename it,
-which is how it can tell you <em>&ldquo;that clip is on KERALA_2023, and that drive is not
-plugged in.&rdquo;</em></p>
+<p>One random identifier, nothing else. It is what lets Yellide still recognise a drive
+after you rename it, so it can say <em>&ldquo;that clip is on KERALA_2023, and that drive is
+not plugged in.&rdquo;</em></p>
 <p>You can turn it off. In Claude Desktop: <b class="k">Settings &rarr; Extensions &rarr;
 Yellide &rarr; Configure</b>, then <b class="k">Never write anything to my drives</b>. In any
 other MCP client, set <code>YELLIDE_NO_DRIVE_MARKER=1</code> in the server&rsquo;s environment.</p>
 
-<p>Indexing and searching work exactly the same with it on. The only thing you lose is that
-after you rename a drive, Yellide can no longer tell it is the same one, so it cannot say
-<em>&ldquo;that clip is on KERALA_2023&rdquo;</em> about a drive you have since renamed.</p>
+<p>Indexing and searching are unaffected. You lose only the ability to recognise a drive
+you have renamed.</p>
 
 <div class="note">The refusal is covered by
 <a href="https://github.com/urbanmorph/yellide/blob/main/test/safety.test.js">the same test</a>:
@@ -150,19 +145,18 @@ write and every delete the software performs</b>. There are no others:</p>
 <div class="row"><div class="k">the file you name</div><div class="v">Only when you ask for an export.</div></div>
 </div>
 
-<p><b class="k">Every delete targets a path Yellide built itself</b> in the temporary folder,
-with its own process id in the name. Not one of them can name a file of yours. There is no
-code path that removes, renames or overwrites a photo, a video or any file you made.</p>
+<p><b class="k">Every delete targets a path Yellide built itself</b> in the temporary
+folder, with its own process id in the name. None of them can name a file of yours.</p>
 
 <p>External programs, only <code>sips</code> and <code>qlmanage</code>, both built into
 macOS, plus <code>open</code> to reveal a file, are run with an argument list, never a
 shell command. A filename containing <code>; rm -rf ~</code> is a filename, not an
 instruction. Nothing in Yellide evaluates a string as code.</p>
 
-<p>None of that is a promise you have to take. <a href="https://github.com/urbanmorph/yellide/blob/main/test/safety.test.js">A
-test enforces it</a>: every write above is listed there with its reason, and if a future
-version adds one that is not on the list, the build stops and no bundle is produced. The
-list on this page and the list in that test are the same list.</p>
+<p>None of that is a promise you have to take.
+<a href="https://github.com/urbanmorph/yellide/blob/main/test/safety.test.js">A test enforces
+it</a>: every write above is listed there, and a version that adds one that is not on the list
+does not build.</p>
 
 <div class="note">What this cannot protect you from: Yellide runs beside whatever else you
 have installed. It cannot stop another extension, or any other tool, from deleting your
@@ -170,10 +164,8 @@ files. Keep backups, of anything irreplaceable, in a second place, that no softw
 your machine can reach.</div>
 
 <h2>Private documents</h2>
-<p>Anything you mark private is recorded by type only, <em>identity document</em>,
-<em>medical report</em>, never by its contents, and never with a description. Mark one copy and
-every identical copy is marked, wherever else it sits on your drives. Exports reduce private
-items to a bare label.</p>
+<p>Anything you mark private is recorded by type only, never by its contents, and reduced
+to a bare label on export. Marking one copy marks every identical copy.</p>
 
 <h2>Why you can check all of this</h2>
 <p>The source is MIT-licensed and public. That is the only real proof any of the above is true,
