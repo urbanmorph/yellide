@@ -25,6 +25,7 @@ const put = (root, rel, body) => {
   fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
   fs.writeFileSync(path.join(root, rel), body || rel);
 };
+const pause = () => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 5);
 const fresh = name => {
   const dbPath = path.join(tmp, name + '.db');
   return { db: storage.open(dbPath), dbPath };
@@ -77,6 +78,102 @@ const fresh = name => {
     } finally { fs.renameSync(drive + '.unplugged', drive); }
 
     assert.strictEqual(tools.locationsFor(db, id).best.state, 'present', 'plugged back in, still offline');
+  });
+
+  await check('a scan that hits its file limit marks nothing missing, and says it stopped', async () => {
+    // The walk stops at a cap. Every file past it went unseen, and everything unseen was
+    // then marked missing, though it was still on disk. And nothing said the scan was cut.
+    const root = path.join(tmp, 'capped');
+    for (let i = 1; i <= 5; i++) put(root, `Shoot${i}/f${i}.jpg`);   // the cap is checked per folder
+    const { db } = fresh('capped');
+    core.scan(db, root, { writeMarker: false, cap: 10 });
+    pause();   // "unseen" is last_seen_at older than this scan, so the clock has to move
+    const r = core.scan(db, root, { writeMarker: false, cap: 2 });
+    assert.strictEqual(db.prepare("select count(*) n from location where state='missing'").get().n, 0,
+      'files beyond the cap were marked missing while still on disk');
+    assert.ok(r.capped, 'the scan result does not say it stopped at the cap');
+    const text = tools.describeArchive(db).text;
+    assert.ok(/stopped|limit|not all|incomplete/i.test(text) && text.includes('2'),
+      `describe_archive does not say the index is incomplete:\n${text}`);
+
+    core.scan(db, root, { writeMarker: false, cap: 10 });
+    assert.ok(!/stopped at/i.test(tools.describeArchive(db).text), 'still warns after a complete scan');
+  });
+
+  await check('a renamed file keeps its caption in both search indexes', async () => {
+    // A rescan rebuilt the exact-match row from file metadata alone, so a caption survived a
+    // rename only in the stemmed index, and by accident.
+    const root = path.join(tmp, 'rename');
+    put(root, 'Wedding/IMG_0001.jpg');
+    const { db } = fresh('rename');
+    core.scan(db, root, { writeMarker: false });
+    const id = db.prepare('select id from asset').get().id;
+    tools.writeAnnotations(db, [{ id, caption: 'garlands on the mandap' }]);
+    fs.renameSync(path.join(root, 'Wedding/IMG_0001.jpg'), path.join(root, 'Wedding/renamed.jpg'));
+    core.scan(db, root, { writeMarker: false });
+    for (const t of ['search', 'search_en'])
+      assert.strictEqual(db.prepare(`select count(*) n from ${t} where ${t} match 'mandap'`).get().n, 1,
+        `caption gone from ${t} after a rename`);
+  });
+
+  await check('a file nobody has described is in the stemmed index too', async () => {
+    // Scan wrote only the exact index, so "garland" never found a folder called Garlands
+    // until someone captioned the file.
+    const root = path.join(tmp, 'stem');
+    put(root, 'Garlands/IMG_0002.jpg');
+    const { db } = fresh('stem');
+    core.scan(db, root, { writeMarker: false });
+    assert.strictEqual(db.prepare("select count(*) n from search_en where search_en match 'garland'").get().n, 1);
+  });
+
+  await check('each search row is keyed by its asset, so replacing one is not a table scan', async () => {
+    // asset_id is an unindexed FTS column, so "delete where asset_id = ?" read every row. On a
+    // 21,000-file catalog that was 5.6 ms per file, paid on every scan and every caption.
+    const root = path.join(tmp, 'rowid');
+    for (let i = 1; i <= 3; i++) put(root, `Day${i}/IMG_${i}.jpg`);
+    const { db } = fresh('rowid');
+    core.scan(db, root, { writeMarker: false });
+    const id = db.prepare('select id from asset limit 1').get().id;
+    tools.writeAnnotations(db, [{ id, caption: 'twice over' }]);
+    tools.writeAnnotations(db, [{ id, caption: 'twice over, again' }]);
+    for (const t of ['search', 'search_en']) {
+      const rows = db.prepare(`select rowid, asset_id from ${t}`).all();
+      assert.strictEqual(rows.length, 3, `${t} has ${rows.length} rows for 3 files`);
+      assert.ok(rows.every(r => r.rowid === r.asset_id), `${t} rows are not keyed by asset id`);
+    }
+  });
+
+  await check('an existing catalog is migrated to asset-keyed search rows', async () => {
+    const { db } = fresh('migrate');
+    for (const t of ['search', 'search_en']) {
+      db.prepare(`delete from ${t}`).run();
+      db.prepare(`insert into ${t}(rowid, body, asset_id) values(900, 'old row', 7)`).run();
+    }
+    db.prepare('delete from schema_version where v >= 4').run();
+    db.close();
+    const again = storage.open(path.join(tmp, 'migrate.db'));
+    for (const t of ['search', 'search_en'])
+      assert.deepStrictEqual({ ...again.prepare(`select rowid, asset_id, body from ${t}`).get() },
+        { rowid: 7, asset_id: 7, body: 'old row' }, `${t} not migrated`);
+  });
+
+  await check('the migration rebuilds rows that older scans left out or stripped', async () => {
+    // A rescan skips unchanged files, so damage done by older versions (no stemmed row at
+    // all, or a caption dropped after a rename) would otherwise never be repaired.
+    const root = path.join(tmp, 'repair');
+    put(root, 'Garlands/IMG_9.jpg');
+    const { db, dbPath } = fresh('repair');
+    core.scan(db, root, { writeMarker: false });
+    const id = db.prepare('select id from asset').get().id;
+    tools.writeAnnotations(db, [{ id, caption: 'mandap at dusk' }]);
+    db.prepare('delete from search_en').run();
+    db.prepare("update search set body = 'IMG_9.jpg' where rowid = ?").run(id);
+    db.prepare('delete from schema_version where v >= 4').run();
+    db.close();
+    const again = storage.open(dbPath);
+    for (const [t, word] of [['search', 'mandap'], ['search_en', 'garland']])
+      assert.strictEqual(again.prepare(`select count(*) n from ${t} where ${t} match ?`).get(word).n, 1,
+        `${t} was not rebuilt`);
   });
 
   fs.rmSync(tmp, { recursive: true, force: true });

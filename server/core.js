@@ -78,8 +78,10 @@ const PROJECT_MARKER = new Set(['package.json','pubspec.yaml','Cargo.toml','go.m
   'pyproject.toml','Gemfile','Podfile','composer.json','pom.xml','build.gradle','CMakeLists.txt',
   'Makefile','tsconfig.json','.venv','manifest.json']);
 
-function walkTree(dir, out, depth = 0, cap = 5000, maxDepth = 8) {
-  if (depth > maxDepth || out.length >= cap) return out;
+// `stats` records where the walk gave up, so a partial walk is never mistaken for a whole one.
+function walkTree(dir, out, depth = 0, cap = 5000, maxDepth = 8, stats = {}) {
+  if (depth > maxDepth) { stats.deep = (stats.deep || 0) + 1; return out; }
+  if (out.length >= cap) { stats.capped = true; return out; }
   let ents; try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch { return out; }
   // Never skip the root the user pointed at — only subtrees discovered on the way down.
   if (depth > 0 && ents.some(e => e.isFile() && PROJECT_MARKER.has(e.name))) return out;
@@ -88,8 +90,8 @@ function walkTree(dir, out, depth = 0, cap = 5000, maxDepth = 8) {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) {
       if (SKIP.test(e.name) || PKG_DIR.test(e.name)) continue;
-      if (MEDIA_LIBRARY.test(e.name)) { walkLibrary(p, out, cap); continue; }
-      walkTree(p, out, depth + 1, cap, maxDepth);
+      if (MEDIA_LIBRARY.test(e.name)) { walkLibrary(p, out, cap, stats); continue; }
+      walkTree(p, out, depth + 1, cap, maxDepth, stats);
     }
     else if (MEDIA.has(path.extname(e.name).toLowerCase())) {
       try { const st = fs.statSync(p); out.push({ p, size: st.size, mtime: st.mtimeMs, blocks: st.blocks }); } catch {}
@@ -99,7 +101,7 @@ function walkTree(dir, out, depth = 0, cap = 5000, maxDepth = 8) {
 }
 
 // Inside a Photos/iMovie/FCP library: find the originals, ignore everything else.
-function walkLibrary(lib, out, cap) {
+function walkLibrary(lib, out, cap, stats) {
   const roots = [];
   const scan = (dir, depth) => {
     if (depth > 3) return;
@@ -112,7 +114,7 @@ function walkLibrary(lib, out, cap) {
     }
   };
   scan(lib, 0);
-  for (const r of roots) walkTree(r, out, 0, cap, 6);
+  for (const r of roots) walkTree(r, out, 0, cap, 6, stats);
   return out;
 }
 
@@ -260,7 +262,8 @@ const openDb = storage.open;                 // persistent catalog + migrations
 function scan(db, root, opts = {}) {
   const cap = opts.cap || 20000;
   const now = new Date().toISOString();
-  const files = walkTree(root, [], 0, cap);
+  const walk = {};
+  const files = walkTree(root, [], 0, cap, 8, walk);
   const portableRoot = toPortable(root);
 
   const marker = opts.writeMarker === false ? { id: null }
@@ -287,8 +290,6 @@ function scan(db, root, opts = {}) {
         size=excluded.size, mtime=excluded.mtime, last_seen_at=excluded.last_seen_at`);
   const delAnn = db.prepare("delete from annotation where asset_id = ? and source in ('folder','filename')");
   const insAnn = db.prepare('insert into annotation(asset_id,key,value,source,created_at) values(?,?,?,?,?)');
-  const delFts = db.prepare('delete from search where asset_id = ?');
-  const insFts = db.prepare('insert into search(body, asset_id) values(?,?)');
 
   const r = { found: files.length, indexed: 0, unchanged: 0, placeholders: 0, failed: 0, meta_bytes: 0 };
   const tick = opts.onProgress, every = opts.progressEvery || 200;
@@ -324,11 +325,7 @@ function scan(db, root, opts = {}) {
       const tags = tier1(f.p, root);
       for (const t of tags) insAnn.run(id, t.key, t.value, t.source, now);
 
-      delFts.run(id);
-      insFts.run([path.basename(f.p), rel.split('/').join(' '), x.camera, x.lens, x.kind, x.brand,
-                  x.title, x.artist, x.description,
-                  (x.shot_at_local || x.shot_at || '').slice(0, 10), ...tags.map(t => t.value)]
-                 .filter(Boolean).join(' ').normalize('NFC'), id);
+      storage.reindex(db, id);
       r.indexed++;
       // Commit periodically so progress is visible and a crash loses seconds, not hours,
       // and at least once a second so a caption written meanwhile never waits long.
@@ -338,10 +335,14 @@ function scan(db, root, opts = {}) {
       }
     }
 
-    // The index never forgets: vanished files are marked, never deleted.
-    r.missing = db.prepare(`update location set state = 'missing'
+    // The index never forgets: vanished files are marked, never deleted. A walk cut short
+    // by the cap never saw the rest, so it cannot say what has vanished.
+    r.capped = !!walk.capped; r.too_deep = walk.deep || 0;
+    r.missing = r.capped ? 0 : db.prepare(`update location set state = 'missing'
                             where root = ? and last_seen_at < ? and state != 'missing'`)
                   .run(portableRoot, now).changes;
+    storage.noteScanLimits(db, portableRoot, r.capped || r.too_deep
+      ? { cap, found: r.found, too_deep: r.too_deep, capped: r.capped, at: now } : null);
     db.exec('commit');
   } catch (e) { db.exec('rollback'); throw e; }
   return r;

@@ -90,6 +90,18 @@ const MIGRATIONS = [
     create virtual table search_en using fts5(
       body, asset_id unindexed, tokenize='porter unicode61');
   `},
+  // asset_id is an unindexed FTS column, so replacing a row by it scanned the whole table:
+  // 5.6 ms a file on a 21,000-file catalog. Key each row by its asset instead. The latest
+  // row per asset survives, the way the last write always won.
+  { v: 4, name: 'search rows keyed by asset', sql: ['search', 'search_en'].map(t => `
+    create temp table keep as select asset_id a, body b from ${t}
+      where rowid in (select max(rowid) from ${t} where asset_id is not null group by asset_id);
+    delete from ${t};
+    insert into ${t}(rowid, body, asset_id) select a, b, a from keep;
+    drop table keep;`).join('\n'),
+    // Rescans skip unchanged files, so rows older versions left out of search_en, or rebuilt
+    // without their captions after a rename, are repaired here or never.
+    run: db => { for (const { id } of db.prepare('select id from asset').all()) reindex(db, id); } },
 ];
 
 function open(file = catalogPath()) {
@@ -108,6 +120,7 @@ function open(file = catalogPath()) {
     db.exec('begin immediate');
     try {
       db.exec(m.sql);
+      if (m.run) m.run(db);
       db.prepare('insert into schema_version(v, applied_at) values(?,?)').run(m.v, new Date().toISOString());
       db.exec('commit');
     } catch (e) {
@@ -119,6 +132,47 @@ function open(file = catalogPath()) {
 }
 
 const version = db => db.prepare('select max(v) v from schema_version').get().v;
+
+// The one place a search row is built, by scan and by every write of a tag or caption.
+// It reads everything known about the asset, so a rescan can never drop a caption, and it
+// writes both indexes, so the stemmed one covers files nobody has described yet.
+// Every location contributes its words: a renamed file is found by either name, and the
+// same footage on two drives by either folder.
+const stmts = new WeakMap();
+function reindex(db, assetId) {
+  let q = stmts.get(db);
+  if (!q) stmts.set(db, q = {
+    asset: db.prepare('select * from asset where id = ?'),
+    locs: db.prepare('select distinct filename, rel_path from location where asset_id = ?'),
+    priv: db.prepare("select 1 p from annotation where asset_id = ? and key = 'private'"),
+    tags: db.prepare('select value from annotation where asset_id = ?'),
+    write: ['search', 'search_en'].map(t => [
+      db.prepare(`delete from ${t} where rowid = ?`),
+      db.prepare(`insert into ${t}(rowid, body, asset_id) values(?,?,?)`)]),
+  });
+  const a = q.asset.get(assetId);
+  if (!a) return;
+  // Anything marked private is indexed by type only, never by its contents.
+  const tags = q.priv.get(assetId) ? ['private document'] : q.tags.all(assetId).map(r => r.value);
+  const words = q.locs.all(assetId).flatMap(l => [l.filename, l.rel_path.split('/').join(' ')]);
+  const body = [...new Set(words), a.camera, a.lens, a.kind, a.brand, a.title, a.artist, a.description,
+                (a.shot_at_local || a.shot_at || '').slice(0, 10), ...tags]
+               .filter(Boolean).join(' ').normalize('NFC');
+  for (const [del, ins] of q.write) { del.run(assetId); ins.run(assetId, body, assetId); }
+}
+
+// Which roots the last scan could not walk completely: { root: {cap, found, capped, too_deep, at} }.
+// A root that scans completely is removed, so the warning lasts only while it is true.
+const scanLimits = db => {
+  try { return JSON.parse(db.prepare("select v from meta where k = 'scan_limits'").get()?.v || '{}'); }
+  catch { return {}; }
+};
+function noteScanLimits(db, root, limit) {
+  const all = scanLimits(db);
+  if (limit) all[root] = limit; else if (root in all) delete all[root]; else return;
+  db.prepare(`insert into meta(k, v) values('scan_limits', ?)
+              on conflict(k) do update set v = excluded.v`).run(JSON.stringify(all));
+}
 
 // A random id, generated once, resettable. It identifies an install, never a person,
 // and exists only so retention can be told apart from new installs.
@@ -166,4 +220,5 @@ function volumeMarker(root, opts = {}) {
   }
 }
 
-module.exports = { dataDir, catalogPath, open, version, MIGRATIONS, installId, resetInstallId, volumeMarker, isMountPoint };
+module.exports = { dataDir, catalogPath, open, version, MIGRATIONS, installId, resetInstallId, volumeMarker, isMountPoint,
+                   scanLimits, noteScanLimits, reindex };

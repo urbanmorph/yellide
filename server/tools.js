@@ -82,6 +82,13 @@ function describeArchive(db) {
   if (ph) L.push(`Cloud     Separately, ${ph.toLocaleString()} MORE files exist only as iCloud/Dropbox placeholders and ` +
                  `are NOT part of the ${a.files.toLocaleString()} above. They were deliberately never opened, ` +
                  `because reading one downloads it. Everything counted above is a real local file`);
+  for (const [root, lim] of Object.entries(require('./storage.js').scanLimits(db))) {
+    if (lim.capped) L.push(`Incomplete  The scan of ${tilde(root)} stopped at its limit of ` +
+      `${lim.cap.toLocaleString()} files, so some media there is not indexed yet. Nothing past ` +
+      `that point has been marked missing`);
+    if (lim.too_deep) L.push(`Incomplete  ${lim.too_deep.toLocaleString()} folder${lim.too_deep === 1 ? '' : 's'} ` +
+      `in ${tilde(root)} sit more than 8 levels deep and were not searched`);
+  }
   const pg = captionProgress(db);
   const undone = pg.shoots_left;
   L.push(`Described ${pg.files_described.toLocaleString()} of ${pg.files_total.toLocaleString()} images and ` +
@@ -564,33 +571,13 @@ function writeAnnotations(db, items) {
       : `\n\nThat was the last one. Everything is described.`) };
 }
 
-// Rebuild one FTS row so a new caption is findable the moment it is written.
-function reindex(db, assetId) {
-  const a = db.prepare('select * from asset where id = ?').get(assetId);
-  if (!a) return;
-  const loc = db.prepare('select filename, rel_path from location where asset_id = ? limit 1').get(assetId);
-  // Anything marked private is indexed by type only — never by its contents.
-  const isPrivate = db.prepare("select 1 p from annotation where asset_id = ? and key = 'private'").get(assetId);
-  const tags = isPrivate ? ['private document']
-    : db.prepare('select value from annotation where asset_id = ?').all(assetId).map(r => r.value);
-  const body = [loc?.filename, loc?.rel_path?.split('/').join(' '), a.camera, a.lens, a.kind, a.brand,
-                a.title, a.artist, a.description,
-                (a.shot_at_local || a.shot_at || '').slice(0, 10), ...tags]
-               .filter(Boolean).join(' ').normalize('NFC');
-  db.prepare('delete from search where asset_id = ?').run(assetId);
-  db.prepare('insert into search(body, asset_id) values(?,?)').run(body, assetId);
-  try {
-    db.prepare('delete from search_en where asset_id = ?').run(assetId);
-    db.prepare('insert into search_en(body, asset_id) values(?,?)').run(body, assetId);
-  } catch {}
-}
+const { reindex } = require('./storage.js');
 
 module.exports.getWork = getWork;
 module.exports.captionNext = captionNext;
 module.exports.captionProgress = captionProgress;
 module.exports.look = look;
 module.exports.writeAnnotations = writeAnnotations;
-module.exports.reindex = reindex;
 module.exports.visionCapability = vision.capability;
 // Anything that writes an annotation must call this, or the text is stored and never found.
 module.exports.reindex = reindex;

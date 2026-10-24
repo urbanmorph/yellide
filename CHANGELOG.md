@@ -10,6 +10,26 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.27] 2026-10-24
+
+### Fixed
+
+- **A scan that reached its file limit marked everything past it as missing**, though those
+  files were still on disk, and nothing said the scan had stopped. It now marks nothing
+  missing when it could not see everything, and `describe_archive` says which place was
+  not fully indexed. It also says when folders were too deeply nested to be searched.
+- **A renamed file lost its caption from the exact-match search index.** A rescan rebuilt
+  that row from the file alone. Search rows are now built in one place, from everything
+  known about the file, including every name and folder it has had.
+- **Files nobody had described were missing from the stemmed index**, so "garland" did not
+  find a folder called Garlands. On a real 21,000-file catalog that was 5,800 files.
+- **Every caption was slower than it needed to be.** Replacing a search row read the whole
+  table. Rows are now keyed by file: a caption copied to 535 files went from 3.1 seconds
+  to 0.1.
+
+The first start after updating rebuilds the search index once, which took about two
+seconds on a 21,000-file catalog.
+
 ## [0.9.26] 2026-10-24
 
 ### Fixed
