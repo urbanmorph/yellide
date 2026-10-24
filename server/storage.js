@@ -96,13 +96,16 @@ function open(file = catalogPath()) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const { DatabaseSync } = require('node:sqlite');
   const db = new DatabaseSync(file);
-  db.exec('pragma journal_mode = wal; pragma foreign_keys = on; pragma synchronous = normal;');
+  // The scan worker and the tool calls are two writers on one file. Without a timeout a
+  // caption written mid-scan failed at once with "database is locked" and was lost.
+  db.exec('pragma journal_mode = wal; pragma foreign_keys = on; pragma synchronous = normal; ' +
+          'pragma busy_timeout = 15000;');
   db.exec('create table if not exists schema_version(v integer primary key, applied_at text)');
 
   const applied = new Set(db.prepare('select v from schema_version').all().map(r => r.v));
   for (const m of MIGRATIONS) {
     if (applied.has(m.v)) continue;
-    db.exec('begin');
+    db.exec('begin immediate');
     try {
       db.exec(m.sql);
       db.prepare('insert into schema_version(v, applied_at) values(?,?)').run(m.v, new Date().toISOString());

@@ -292,8 +292,8 @@ function scan(db, root, opts = {}) {
 
   const r = { found: files.length, indexed: 0, unchanged: 0, placeholders: 0, failed: 0, meta_bytes: 0 };
   const tick = opts.onProgress, every = opts.progressEvery || 200;
-  let sinceTick = 0;
-  db.exec('begin');
+  let sinceTick = 0, lastCommit = Date.now();
+  db.exec('begin immediate');
   try {
     for (const f of files) {
       const rel = toPortable(path.relative(root, f.p));
@@ -330,10 +330,11 @@ function scan(db, root, opts = {}) {
                   (x.shot_at_local || x.shot_at || '').slice(0, 10), ...tags.map(t => t.value)]
                  .filter(Boolean).join(' ').normalize('NFC'), id);
       r.indexed++;
-      // Commit periodically so progress is visible and a crash loses seconds, not hours.
-      if (tick && ++sinceTick >= every) {
-        sinceTick = 0;
-        db.exec('commit'); tick(r); db.exec('begin');
+      // Commit periodically so progress is visible and a crash loses seconds, not hours,
+      // and at least once a second so a caption written meanwhile never waits long.
+      if (++sinceTick >= every || Date.now() - lastCommit > 1000) {
+        sinceTick = 0; lastCommit = Date.now();
+        db.exec('commit'); if (tick) tick(r); db.exec('begin immediate');
       }
     }
 

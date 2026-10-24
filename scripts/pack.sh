@@ -70,6 +70,14 @@ for f in pathlib.Path('site').glob('*.html'):
         new = re.sub(r'yellide-\d+\.\d+\.\d+\.mcpb', 'yellide-' + version + '.mcpb', new)
     if new != s:
         f.write_text(new); changed.append(f.name)
+# The README is the first thing a visitor reads, and it said v0.9.7 for eighteen releases.
+readme = pathlib.Path('README.md')
+s = readme.read_text()
+new = re.sub(r'(\*\*Status:\*\* working, v)\d+\.\d+\.\d+', r'\g<1>' + version, s)
+if new == s and version not in s:
+    sys.exit('README.md has no "**Status:** working, vX.Y.Z" line to stamp')
+if new != s:
+    readme.write_text(new); changed.append('README.md')
 site = pathlib.Path('site/llms.txt')
 print('  stamped %s into: %s' % (version, ', '.join(changed) or '(nothing to change)'))
 stale = [f.name for f in pathlib.Path('site').glob('*.html')

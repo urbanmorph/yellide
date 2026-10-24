@@ -27,8 +27,9 @@ It has no account, never modifies your files, and sends nothing about you: the o
 "Where is that clip?"                          → on KERALA_2023, and that drive is unplugged
 ```
 
-**Status:** working, v0.9.7. Used daily against a ~9,000-file archive. Not yet 1.0 because
-transcripts, Windows testing and the export viewer are unbuilt.
+**Status:** working, v0.9.26. Built against a real ~21,000-file archive. Not yet 1.0 because
+audio is indexed but not yet transcribed, describing pictures needs macOS, Windows and Linux
+are untested, and the export viewer is unbuilt.
 
 ## Install
 

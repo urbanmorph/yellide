@@ -10,6 +10,22 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.26] 2026-10-24
+
+### Fixed
+
+- **A description written while a scan was running was thrown away.** The scan and the tool
+  calls write to the same catalog, and nothing told the second writer to wait, so
+  `write_annotations` failed at once with "database is locked". The pictures had already been
+  looked at, so the whole batch was wasted. Writes now wait for the lock, and a scan commits
+  at least once a second so the wait is short.
+- **Files on an unplugged drive were reported as on disk.** Nothing ever marked them
+  otherwise, so `reveal` handed back a path that did not exist and search showed no warning.
+  Whether a drive is reachable is now checked when you ask: search marks those files
+  "on a drive that is not plugged in", and `reveal` names the drive to go and fetch, even
+  when you turned off the marker Yellide writes on drives.
+- **The README said v0.9.7.** The build now stamps the version into it.
+
 ## [0.9.25] 2026-10-24
 
 ### Fixed

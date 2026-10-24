@@ -17,11 +17,21 @@ const day = s => (s || '').slice(0, 10);
 
 // After a rename the old path lingers as `missing` beside the new `present` one. Both are
 // true history, but "where is this?" must answer with somewhere it actually is.
+//
+// A scan only visits drives that are mounted, so a file on an unplugged drive is still
+// stored as `present`. Whether its root is reachable is decided here, at the moment of
+// asking, which is also the only moment the answer is true.
+const RANK = { present: 0, offline: 1 };
 function locationsFor(db, assetId) {
-  const rows = db.prepare(`select rel_path, root, filename, state, last_seen_at
-                           from location where asset_id = ? order by
-                           case state when 'present' then 0 when 'offline' then 1 else 2 end,
-                           last_seen_at desc`).all(assetId);
+  const reachable = new Map();
+  const rows = db.prepare(`select id, rel_path, root, filename, state, last_seen_at
+                           from location where asset_id = ? order by last_seen_at desc`).all(assetId)
+    .map(r => {
+      if (r.state !== 'present') return r;
+      if (!reachable.has(r.root)) reachable.set(r.root, fs.existsSync(r.root));
+      return reachable.get(r.root) ? r : { ...r, state: 'offline' };
+    })
+    .sort((a, b) => (RANK[a.state] ?? 2) - (RANK[b.state] ?? 2));
   const live = rows.filter(r => r.state === 'present' || r.state === 'offline');
   return { best: (live[0] || rows[0]) || null, all: rows, live: live.length };
 }
@@ -199,6 +209,7 @@ function search(db, query, opts = {}) {
                   r.width ? `${r.width}×${r.height}` : null, r.camera, fmtSize(r.size)].filter(Boolean);
     const state = best?.state === 'present' ? '' :
                   best?.state === 'missing' ? '  ⚠ not on disk any more' :
+                  best?.state === 'offline' ? '  ⏏ on a drive that is not plugged in' :
                   best?.state === 'dematerialised' ? '  ☁ in the cloud, not downloaded' : '';
     const extra = all.length > live && live > 0 ? `  (+${all.length - live} old path${all.length - live > 1 ? 's' : ''})` : '';
     // The id has to be IN THE TEXT. Every other tool — show_pictures, reveal, get_asset —
@@ -256,7 +267,8 @@ function reveal(db, id, mode = 'open') {
   if (best.state !== 'present') {
     const vol = db.prepare('select v.label from location l join volume v on v.id=l.volume_id where l.id=?').get(best.id);
     return { text: `Not available right now. It was last seen at ${tilde(p)}` +
-      (vol?.label ? ` on the drive "${vol.label}"` : '') +
+      // No marker (the user can decline it) means no volume row; the root's name is the drive's.
+      ` on the drive "${vol?.label || path.basename(best.root)}"` +
       `. ${best.state === 'missing' ? 'The file is no longer there.' : 'That drive is not mounted.'}`,
       path: p, state: best.state };
   }
@@ -495,7 +507,7 @@ function writeAnnotations(db, items) {
   const ins = db.prepare('insert into annotation(asset_id,key,value,source,confidence,created_at) values(?,?,?,?,?,?)');
   const del = db.prepare('delete from annotation where asset_id = ? and key = ? and source = ?');
   let n = 0, propagated = 0;
-  db.exec('begin');
+  db.exec('begin immediate');
   try {
     for (const it of list) {
       const id = it.id ?? it.asset_id;
