@@ -403,6 +403,16 @@ function photosLibrary(root, rows) {
       'a live scan in another process was cancelled');
   });
 
+  await check('diagnostics says when the last scan was, and that an old index refreshes on asking', async () => {
+    // After an upgrade the report showed the new version beside the old counts, with nothing
+    // to say a fresh scan had not run yet and would start the moment anyone asked.
+    const db = fresh('diag');
+    db.prepare("insert into scan_job(root, state, started_at, finished_at) values('/x','done','2026-08-12T13:02:04Z','2026-08-12T13:02:07Z')").run();
+    const text = tools.diagnosticsReport(db, {}).text;
+    assert.ok(/last scan\s+2026-08-12/.test(text), text);
+    assert.ok(/ask about your media/i.test(text), 'nothing says how to start a fresh scan:\n' + text);
+  });
+
   fs.rmSync(tmp, { recursive: true, force: true });
   if (!process.exitCode) console.log(`\n  coverage: ${passed} checks pass`);
 })();

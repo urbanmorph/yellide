@@ -630,6 +630,10 @@ module.exports.visionCapability = vision.capability;
 module.exports.reindex = reindex;
 
 
+// How stale an index may get before asking about media rescans it. index.js acts on this.
+const AUTO_RESCAN_MS = 60 * 60 * 1000;
+module.exports.AUTO_RESCAN_MS = AUTO_RESCAN_MS;
+
 // ============================================================ diagnostics
 // A remote user with no telemetry is a user we cannot help. This produces a report they
 // can READ before sending — counts, timings, errors, capabilities. No paths, no filenames,
@@ -672,6 +676,14 @@ function diagnosticsReport(db, runtime) {
     return db.prepare('select state, count(*) n, max(finished_at) last from scan_job group by state').all();
   } catch { return []; } })();
   add('scans', jobs.length ? jobs.map(j => j.state + '=' + j.n).join(' ') : 'none recorded');
+  // The report reads the catalog and starts nothing, so after an upgrade it shows the new
+  // version beside the old counts. Say when they are from, and what brings them up to date.
+  const last = jobs.map(j => j.last).filter(Boolean).sort().pop();
+  if (last) {
+    add('last scan', last.slice(0, 10));
+    if (Date.now() - Date.parse(last) > AUTO_RESCAN_MS)
+      L.push('  (counts are from then; a fresh scan starts the next time you ask about your media)');
+  }
   const failed = (() => { try {
     return db.prepare("select error from scan_job where error is not null order by id desc limit 3").all();
   } catch { return []; } })();

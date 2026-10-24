@@ -46,8 +46,8 @@ A website cannot read files on your computer, so it cannot help you find your fo
 <ol>
 
 <li>
-<b><a href="/yellide.mcpb" download="yellide-0.9.29.mcpb">Download Yellide</a></b>
-<div class="note">Version <b class="ver">0.9.29</b>, about <b class="kb">85</b> KB. Everything Yellide does happens on your machine.<br>It saves as <code>yellide-0.9.29.mcpb</code>, if an older number is sitting in your Downloads or on your Desktop, that is not this one.</div>
+<b><a href="/yellide.mcpb" download="yellide-0.9.30.mcpb">Download Yellide</a></b>
+<div class="note">Version <b class="ver">0.9.30</b>, about <b class="kb">86</b> KB. Everything Yellide does happens on your machine.<br>It saves as <code>yellide-0.9.30.mcpb</code>, if an older number is sitting in your Downloads or on your Desktop, that is not this one.</div>
 </li>
 
 <li>
@@ -141,7 +141,7 @@ contact sheet. This one cost us a whole release to notice.</p>
 
 <ol>
 <li><b>Download the new file and drag it on as before.</b>
-<div class="note">The filename carries the version, <code>yellide-0.9.29.mcpb</code>.
+<div class="note">The filename carries the version, <code>yellide-0.9.30.mcpb</code>.
 If the number is lower than the one on this page, it is a stale download.</div></li>
 
 <li><b>The button now says <em>Update</em>, not <em>Install Anyway</em>.</b>
@@ -157,9 +157,22 @@ update already happened. <b>Nothing changes until you click Update.</b></p></div
 <b>Details</b> should match the one at the bottom of this page. If it does not, the update
 did not apply.</p>
 
+<h3>Then, in a new chat</h3>
+
+<div class="log said">
+<div class="row"><div class="k">&ldquo;Run the Yellide diagnostics&rdquo;</div>
+<div class="v">The first line should say the version at the bottom of this page. The counts
+under it are from your <b>last</b> scan: the report reads the index and starts nothing.</div></div>
+<div class="row"><div class="k">&ldquo;What media files do I have on this Mac?&rdquo;</div>
+<div class="v">This is what brings the index up to date. If the last scan is more than an hour
+old, a new one starts in the background, and everything it finds is searchable by name
+within seconds. Ask again in half a minute for the new totals.</div></div>
+</div>
+
 <h2>If something goes wrong</h2>
 <div class="log plain">
 <div class="row"><div class="k">You updated but nothing changed</div><div class="v">A sideloaded extension keeps running the old code until you uninstall, reinstall and restart. Check the version at <b class="k">Settings &rarr; Extensions &rarr; Yellide</b> against the one at the foot of this page.</div></div>
+<div class="row"><div class="k">Diagnostics shows the new version but the old numbers</div><div class="v">Nothing is wrong. The report never starts a scan. Ask &ldquo;What media files do I have on this Mac?&rdquo; and the scan runs.</div></div>
 <div class="row"><div class="k">It says the index is empty</div><div class="v">The first scan runs in the background. Ask again in a minute; searching works on whatever is indexed so far.</div></div>
 <div class="row"><div class="k">It asks permission for everything</div><div class="v">See the settings above.</div></div>
 <div class="row"><div class="k">The server never starts, and nothing reports an error</div><div class="v">Check for a leading space in a pasted path in the MCP config. It fails completely silently. It cost us an hour.</div></div>
@@ -179,7 +192,7 @@ counts and capabilities, so it is safe to paste anywhere.</p>
 <pre>YELLIDE DIAGNOSTIC REPORT
 Contains no filenames, paths, captions or search terms. Safe to share.
 
-version               0.9.29
+version               0.9.30
 platform              darwin arm64
 can view pictures     yes, sips (built into macOS)
 assets indexed        8,910
@@ -225,7 +238,7 @@ once you know what working looks like.</p>
 </main>
 
 <hr>
-<p class="foot">Free &middot; MIT &middot; v<b class="ver">0.9.29</b> &middot; <a href="https://github.com/urbanmorph/yellide/blob/main/CHANGELOG.md">what changed</a></p>
+<p class="foot">Free &middot; MIT &middot; v<b class="ver">0.9.30</b> &middot; <a href="https://github.com/urbanmorph/yellide/blob/main/CHANGELOG.md">what changed</a></p>
 
 
 </div>

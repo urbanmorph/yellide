@@ -10,6 +10,22 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.30] 2026-10-24
+
+### Fixed
+
+- **After an update, the diagnostics showed the new version beside the old counts**, with
+  nothing to say why. The report reads the index and starts nothing. It now gives the date of
+  the last scan and, when that is over an hour old, says a fresh scan starts the next time you
+  ask about your media.
+
+### Changed
+
+- **What to do after installing or updating is written where people look.** The extension's
+  description in Claude Desktop now says to quit with Cmd-Q, reopen, and ask "what media files
+  do I have on this Mac?", which is what starts the scan. The install page says the same after
+  its upgrade steps, and explains the old numbers in the diagnostics.
+
 ## [0.9.29] 2026-10-24
 
 ### Added

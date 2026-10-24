@@ -80,7 +80,6 @@ function startScan(roots, cap) {
 // The tool knows the index is empty; making the user say so is asking them to do its job.
 // So: the first question of any kind starts the scan, and rescans happen on their own —
 // they cost 4 ms when nothing changed, so there is no reason to make anyone ask.
-const AUTO_RESCAN_MS = 60 * 60 * 1000;
 
 function maybeAutoScan() {
   try {
@@ -98,7 +97,7 @@ function maybeAutoScan() {
       stampScan(d);
       return { started: job, reason: 'first-run', roots: roots.length };
     }
-    if (age > AUTO_RESCAN_MS) {
+    if (age > T.AUTO_RESCAN_MS) {
       const roots = discover.discoverFast().locations.map(l => l.path);
       if (!roots.length) return null;
       const job = startScan(roots);
