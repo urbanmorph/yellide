@@ -6,10 +6,8 @@ const exif = require('../server/exif.js');
 
 function buildJpegWithGps({ lat = [12, 58, 15], latRef = 'N', lon = [77, 35, 30], lonRef = 'E',
                             make = 'Apple', model = 'iPhone 8' } = {}) {
-  const bufs = [], rat = (n, d) => { const b = Buffer.alloc(8); b.writeUInt32BE(n, 0); b.writeUInt32BE(d, 4); return b; };
+  const rat = (n, d) => { const b = Buffer.alloc(8); b.writeUInt32BE(n, 0); b.writeUInt32BE(d, 4); return b; };
   // TIFF block, big-endian
-  const tiff = [];
-  const push = b => { tiff.push(b); return b.length; };
   const header = Buffer.alloc(8); header.write('MM', 0, 'latin1'); header.writeUInt16BE(42, 2); header.writeUInt32BE(8, 4);
   // Layout: header(8) | IFD0 | data area
   const entry = (tag, type, count, valueOrOffset) => {

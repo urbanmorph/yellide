@@ -27,7 +27,7 @@ It has no account, never modifies your files, and sends nothing about you: the o
 "Where is that clip?"                          → on KERALA_2023, and that drive is unplugged
 ```
 
-**Status:** working, v0.9.28. Built against a real ~21,000-file archive. Not yet 1.0 because
+**Status:** working, v0.9.29. Built against a real ~21,000-file archive. Not yet 1.0 because
 audio is indexed but not yet transcribed, describing pictures needs macOS, Windows and Linux
 are untested, and the export viewer is unbuilt.
 
@@ -62,15 +62,16 @@ no build step, no lockfile.
 ```
 server/           the whole product, no dependencies
   index.js        MCP server: tool definitions, auto-scan, stdio transport
-  core.js         walking, identity, ISO-BMFF parsing, shoot clustering, incremental scan
+  core.js         walking, identity, ISO-BMFF parsing, the two-pass incremental scan
   storage.js      data dir, migrations, volume markers
   exif.js         TIFF/IFD parser. JPEG and every raw format
+  video.js        AVI, Matroska/WebM, MPEG programme and transport streams
   audio.js        ID3, RIFF/WAVE including BWF origination date, FLAC
   vision.js       stills via sips, video frames via qlmanage
   discover.js     density-ranked media discovery; needs no path
   tools.js        the tools' implementations
   worker.js       scanning off the stdio thread
-  photos.js       album names from the macOS Photos library, read-only
+  photos.js       the macOS Photos library's own records and album names, read-only
   contribute.js   the six aggregate counts, and the only network call
 test/             node test/exif.test.js
 scripts/
@@ -104,13 +105,18 @@ bundle, quit Claude Desktop with Cmd-Q, reopen.
 - **Cloud placeholders are detected before any read**, by `blocks === 0 && size > 0`. A
   size threshold misses most of them and turns a 7 ms file into a 20-second download.
   `stat.blocks` is POSIX-only, so the check probes at runtime and fails open on Windows.
+- **A scan lists before it reads.** The first pass records every file by name, folder and
+  date, as a provisional asset, so the whole archive is searchable in seconds. The second
+  reads each file and folds what was known into its content-keyed asset. Online-only files
+  and photos that exist only in iCloud stay provisional, findable and never downloaded.
 - **Privacy propagates by content key, not by path.** The same ID card in six folders is
   marked once.
 - **Captions propagate across a shoot**, which is what makes describing an archive
   affordable, one look can cover hundreds of files.
 - **Undated files are never grouped into one shoot.** They cluster by folder instead;
   grouping them by `(null day, null camera)` produced a single 3,194-file shoot that
-  poisoned the index.
+  poisoned the index. A date guessed from a filename or a file's timestamp counts as
+  undated for this.
 
 ## Repo discipline
 

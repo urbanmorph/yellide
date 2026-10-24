@@ -10,6 +10,46 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.29] 2026-10-24
+
+### Added
+
+- **Everything is searchable within seconds, before it is read.** A scan now lists every
+  file it finds first, by name, folder and a best-guess date, at the cost of one stat each,
+  and reads them afterwards. On the archive this was built against, 46,000 files across 16
+  folders were listed in 6 seconds. Before, a file was unfindable until its turn to be
+  hashed came, and the first full scan of a real machine took 1h42m. Anything written about
+  a file before it is read is kept when it is.
+- **Photos that exist only in iCloud are indexed.** Half of a real Photos library, 11,894
+  photos and videos, had never been on the Mac, so no scan could see them. Photos' own
+  record, read-only, gives each one's date, place, camera and original name, so they are
+  found by search and join their shoots. They are described when a photo from the same shoot
+  is on disk, and never downloaded.
+- **Photos originals are found by the name the camera gave them.** Photos stores originals
+  under random names, so `IMG_6627` found nothing. It now finds all three photos of that name.
+  Photos also dates the originals that carried no date of their own.
+- **Online-only iCloud Drive and Dropbox files are searchable** by name, folder and date:
+  7,862 of them on that machine, which were counted and never findable. They are still never
+  opened, because reading one downloads it.
+- **Files with no date inside them are dated** from their name ("WhatsApp Image 2026-02-16 at
+  14.35.13", "IMG-20240612-WA0004", "Screenshot 2024-12-21 at 9.14.23 PM"), or else from the
+  file's own timestamp, which search marks as a file date. Undated files fell from 7,359 to 96.
+  These dates never group files into a shoot, because a folder of chat images saved on one day
+  is not one shoot.
+- **More video formats, and their length, size and date:** AVI, MKV and WebM, MPEG-2 from SD
+  camcorders (`.mpg`, `.mod`, `.vob`), AVCHD (`.mts`, `.m2ts`, `.tod`), and `.3gp`, `.dv`, `.wmv`,
+  `.flv`. Also AVIF and JPEG XL stills, and the remaining camera raw formats.
+- **Cloud folders under `~/Library/CloudStorage`** (Dropbox, Google Drive, OneDrive, Box) are
+  found. A folder linked from home, like `~/Dropbox`, is walked once, not twice.
+
+### Fixed
+
+- **A scan stopped at 20,000 files and 8 folders deep** in each place it searched. It now
+  walks up to 500,000 files and 24 levels.
+- **Quitting Claude mid-scan stopped every scan after it.** The interrupted scan stayed
+  "running" for ever, and no scan starts while one runs. It is now closed when Yellide next
+  starts, and the next scan carries on where it stopped.
+
 ## [0.9.28] 2026-10-24
 
 ### Fixed

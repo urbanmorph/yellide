@@ -15,6 +15,8 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+// The same name EXIF gives the camera, so a photo in iCloud joins the shoot of one on disk.
+const { cameraName } = require('./exif.js');
 
 /** The Photos database, if there is one. Libraries can be renamed, so look for the suffix. */
 function findLibrary() {
@@ -88,23 +90,60 @@ function openPhotos(photosDb) {
   catch { return new DatabaseSync(photosDb, { readOnly: true }); }
 }
 
+const APPLE_EPOCH = 978307200;                    // 2001-01-01, which Photos counts from
+const pad = n => String(n).padStart(2, '0');
+
 /**
- * The originals Photos keeps safe in iCloud, as "dir/file" under originals/. "Optimise Mac
- * Storage" deletes those local copies, and without this they read as photographs that are
- * gone. Listed, not trashed, held in iCloud: anything else stays missing. A schema without
- * these columns gives an empty set, so nothing is ever called safe on a guess.
+ * Every photo and video Photos lists and has not trashed, as "dir/file" under originals/ with
+ * what Photos knows about it. Half of a real library, 12,000 photos, had never been on the
+ * Mac at all, so no scan could see them, yet Photos holds their date, place, camera and
+ * original name. Columns are read only where they exist; a library without the four that
+ * say where a file is and whether it is safe gives nothing, so nothing is claimed on a guess.
  */
-function cloudOriginals(libraryDir) {
+function libraryRecords(libraryDir) {
   const photosDb = path.join(libraryDir, 'database', 'Photos.sqlite');
-  if (!fs.existsSync(photosDb)) return new Set();
+  if (!fs.existsSync(photosDb)) return [];
   let p;
   try {
     p = openPhotos(photosDb);
-    const cols = new Set(p.prepare("select name from pragma_table_info('ZASSET')").all().map(c => c.name));
-    if (!['ZDIRECTORY', 'ZFILENAME', 'ZTRASHEDSTATE', 'ZCLOUDLOCALSTATE'].every(c => cols.has(c))) return new Set();
-    return new Set(p.prepare(`select ZDIRECTORY || '/' || ZFILENAME k from ZASSET
-                              where ZTRASHEDSTATE = 0 and ZCLOUDLOCALSTATE = 1`).all().map(r => r.k));
-  } catch { return new Set(); }
+    const colsOf = t => new Set(p.prepare(`select name from pragma_table_info('${t}')`).all().map(c => c.name));
+    const a = colsOf('ZASSET'), x = colsOf('ZADDITIONALASSETATTRIBUTES'), e = colsOf('ZEXTENDEDATTRIBUTES');
+    if (!['ZDIRECTORY', 'ZFILENAME', 'ZTRASHEDSTATE', 'ZCLOUDLOCALSTATE'].every(c => a.has(c))) return [];
+    const col = (set, t, c) => set.has(c) ? `${t}.${c}` : 'null';
+    const joinX = x.has('ZASSET') ? 'left join ZADDITIONALASSETATTRIBUTES x on x.ZASSET = a.Z_PK' : '';
+    const joinE = e.has('ZASSET') ? 'left join ZEXTENDEDATTRIBUTES e on e.ZASSET = a.Z_PK' : '';
+    const X = joinX ? x : new Set(), E = joinE ? e : new Set();
+    const rows = p.prepare(`select a.ZDIRECTORY dir, a.ZFILENAME file, a.ZCLOUDLOCALSTATE cloud,
+        ${col(a, 'a', 'ZUUID')} uuid, ${col(a, 'a', 'ZKIND')} kind, ${col(a, 'a', 'ZDATECREATED')} created,
+        ${col(a, 'a', 'ZLATITUDE')} lat, ${col(a, 'a', 'ZLONGITUDE')} lon, ${col(a, 'a', 'ZDURATION')} duration,
+        ${col(a, 'a', 'ZWIDTH')} width, ${col(a, 'a', 'ZHEIGHT')} height,
+        ${col(X, 'x', 'ZORIGINALFILENAME')} original, ${col(X, 'x', 'ZTIMEZONEOFFSET')} tz,
+        ${col(E, 'e', 'ZCAMERAMAKE')} make, ${col(E, 'e', 'ZCAMERAMODEL')} model
+      from ZASSET a ${joinX} ${joinE}
+      where a.ZTRASHEDSTATE = 0 and a.ZDIRECTORY is not null and a.ZFILENAME is not null`).all();
+    return rows.map(r => {
+      const out = { key: r.dir + '/' + r.file, uuid: r.uuid, inCloud: r.cloud === 1,
+                    kind: r.kind === 1 ? 'video' : r.kind === 0 ? 'image' : null,
+                    original: r.original || null, width: r.width || null, height: r.height || null,
+                    duration_s: r.kind === 1 && r.duration > 0 ? +r.duration.toFixed(2) : null,
+                    camera: cameraName(r.make, r.model), shot_at: null, shot_at_local: null,
+                    gps_lat: null, gps_lon: null };
+      if (r.created != null) {
+        const t = (r.created + APPLE_EPOCH) * 1000;
+        out.shot_at = new Date(t).toISOString();
+        // Wall-clock where it was taken, which is what EXIF records and what shoots group by.
+        const l = new Date(t + (r.tz || 0) * 1000);
+        out.shot_at_local = `${l.getUTCFullYear()}-${pad(l.getUTCMonth() + 1)}-${pad(l.getUTCDate())} ` +
+                            `${pad(l.getUTCHours())}:${pad(l.getUTCMinutes())}:${pad(l.getUTCSeconds())}`;
+      }
+      // Photos writes -180 for "no location".
+      if (r.lat != null && r.lon != null && r.lat >= -90 && r.lat <= 90 && r.lon > -180 && r.lon <= 180
+          && !(r.lat === 0 && r.lon === 0)) {
+        out.gps_lat = +r.lat.toFixed(6); out.gps_lon = +r.lon.toFixed(6);
+      }
+      return out;
+    });
+  } catch { return []; }
   finally { try { p?.close(); } catch {} }
 }
 
@@ -176,4 +215,4 @@ function importAlbums(db, opts = {}) {
   };
 }
 
-module.exports = { findLibrary, isDescriptive, readAlbums, importAlbums, cloudOriginals };
+module.exports = { findLibrary, isDescriptive, readAlbums, importAlbums, libraryRecords };

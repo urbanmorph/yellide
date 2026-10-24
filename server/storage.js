@@ -102,6 +102,15 @@ const MIGRATIONS = [
     // Rescans skip unchanged files, so rows older versions left out of search_en, or rebuilt
     // without their captions after a rename, are repaired here or never.
     run: db => { for (const { id } of db.prepare('select id from asset').all()) reindex(db, id); } },
+  // A provisional asset is known before its bytes are read: listed by a scan's first pass, an
+  // online-only placeholder, or a photo that exists only in iCloud. Its key names where it was
+  // seen, not what it is, and it is merged into the real asset once the file is read.
+  // dated_by says where a date came from when the file itself had none: photos | filename | file.
+  { v: 5, name: 'provisional assets and date sources', sql: `
+    alter table asset add column provisional integer not null default 0;
+    alter table asset add column dated_by text;
+    alter table scan_job add column pid integer;
+    create index asset_provisional on asset(provisional) where provisional = 1;` },
 ];
 
 function open(file = catalogPath()) {
@@ -159,6 +168,49 @@ function reindex(db, assetId) {
                 (a.shot_at_local || a.shot_at || '').slice(0, 10), ...tags]
                .filter(Boolean).join(' ').normalize('NFC');
   for (const [del, ins] of q.write) { del.run(assetId); ins.run(assetId, body, assetId); }
+}
+
+// Where a date came from, best first: the file's own metadata, Photos, the filename, the file's
+// timestamp. No date at all ranks last.
+const dateRank = t => `(case when coalesce(${t}.shot_at_local, ${t}.shot_at) is null then 9
+  else case ${t}.dated_by when 'photos' then 1 when 'filename' then 2 when 'file' then 3 else 0 end end)`;
+
+// The same order in plain JS, for a row already read.
+const rankOf = a => !(a.shot_at || a.shot_at_local) ? 9 : ({ photos: 1, filename: 2, file: 3 }[a.dated_by] ?? 0);
+
+// Fold a provisional asset into the real one its file turned out to be. Everything a person or
+// the agent wrote moves across, and what Photos knew fills what the file did not say.
+// Locations move before the delete, which would otherwise cascade to them.
+const adoptStmts = new WeakMap();
+function adopt(db, fromId, toId) {
+  if (fromId == null || fromId === toId) return;
+  let q = adoptStmts.get(db);
+  if (!q) {
+    const take = `${dateRank('p')} < ${dateRank('asset')}`;
+    adoptStmts.set(db, q = [
+      db.prepare(`update annotation set asset_id = ? where asset_id = ? and source not in ('folder','filename')
+                  and not exists (select 1 from annotation b where b.asset_id = ? and b.key = annotation.key
+                                  and b.value = annotation.value)`),
+      db.prepare('update location set asset_id = ? where asset_id = ?'),
+      db.prepare(`update asset set
+          shot_at = case when ${take} then p.shot_at else asset.shot_at end,
+          shot_at_local = case when ${take} then p.shot_at_local else asset.shot_at_local end,
+          dated_by = case when ${take} then p.dated_by else asset.dated_by end,
+          camera = coalesce(asset.camera, p.camera), duration_s = coalesce(asset.duration_s, p.duration_s),
+          gps = coalesce(asset.gps, p.gps), gps_lat = coalesce(asset.gps_lat, p.gps_lat),
+          gps_lon = coalesce(asset.gps_lon, p.gps_lon)
+        from (select * from asset where id = ?) p where asset.id = ?`),
+      ...['search', 'search_en'].map(t => db.prepare(`delete from ${t} where rowid = ?`)),
+      db.prepare('delete from asset where id = ? and provisional = 1'),
+    ]);
+  }
+  const [anns, locs, fill, delFts, delFtsEn, del] = q;
+  anns.run(toId, fromId, toId);
+  locs.run(toId, fromId);
+  fill.run(fromId, toId);
+  delFts.run(fromId); delFtsEn.run(fromId);
+  del.run(fromId);
+  reindex(db, toId);
 }
 
 // Which roots the last scan could not walk completely: { root: {cap, found, capped, too_deep, at} }.
@@ -221,4 +273,4 @@ function volumeMarker(root, opts = {}) {
 }
 
 module.exports = { dataDir, catalogPath, open, version, MIGRATIONS, installId, resetInstallId, volumeMarker, isMountPoint,
-                   scanLimits, noteScanLimits, reindex };
+                   scanLimits, noteScanLimits, reindex, adopt, dateRank, rankOf };

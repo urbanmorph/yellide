@@ -3,7 +3,7 @@
 // Read-only against your footage. The index goes to a temp file. Nothing is uploaded.
 //
 // stdout is the MCP protocol. Nothing may ever be written to it except JSON-RPC.
-const os = require('os'), path = require('path'), fs = require('fs');
+const os = require('os'), path = require('path');
 const { Worker } = require('worker_threads');
 const log = (...a) => process.stderr.write('[yellide] ' + a.join(' ') + '\n');
 
@@ -38,20 +38,35 @@ try {
 
 // One long-lived read connection on the main thread. Writes happen only in the worker.
 let readDb = null;
-const db = () => (readDb ||= storage.open());
+const db = () => (readDb ||= openCatalog());
+// A scan dies with the process that ran it, but its row said "running" for ever, and no scan
+// starts while one is running, so quitting Claude mid-scan stopped every scan after it. The
+// next scan resumes the work anyway: listed files are still waiting to be read.
+// Only a scan whose process is gone: Claude Desktop and Claude Code can run Yellide at once.
+const alive = pid => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+function openCatalog() {
+  const d = storage.open();
+  try {
+    const cancel = d.prepare(`update scan_job set state = 'cancelled', finished_at = ?,
+      error = 'interrupted: Claude quit while it ran; the next scan carries on' where id = ?`);
+    for (const j of d.prepare("select id, pid from scan_job where state = 'running'").all())
+      if (!j.pid || !alive(j.pid)) cancel.run(new Date().toISOString(), j.id);
+  } catch {}
+  return d;
+}
 
 // ---- scanning, off the main thread ----
 // A 10 TB scan cannot block a tool call. Start a job, return immediately, poll by id.
 function startScan(roots, cap) {
   const d = db();
   const now = new Date().toISOString();
-  d.prepare(`insert into scan_job(root, state, started_at) values(?,?,?)`)
-   .run(roots.join(' | ').slice(0, 500), 'running', now);
+  d.prepare(`insert into scan_job(root, state, started_at, pid) values(?,?,?,?)`)
+   .run(roots.join(' | ').slice(0, 500), 'running', now, process.pid);
   const jobId = d.prepare('select last_insert_rowid() id').get().id;
 
   const w = new Worker(path.join(__dirname, 'worker.js'),
     { workerData: { jobId, roots, dbPath: storage.catalogPath(),
-                    cap: cap || 20000, writeMarker: !NO_DRIVE_MARKER } });
+                    cap: cap || core.SCAN_CAP, writeMarker: !NO_DRIVE_MARKER } });
   w.on('message', m => log('scan', jobId, JSON.stringify(m).slice(0, 200)));
   w.on('error', e => {
     try { d.prepare('update scan_job set state=?, error=?, finished_at=? where id=?')
@@ -106,7 +121,8 @@ function scanStatus(jobId) {
     job: j.id, state: j.state,
     found: j.found, indexed: j.indexed, skipped_unchanged_or_placeholder: j.skipped,
     percent: pct, started_at: j.started_at, finished_at: j.finished_at, error: j.error,
-    hint: j.state === 'running' ? 'Still going. Ask again in a moment. Search already works on what is indexed.' : undefined,
+    hint: j.state === 'running' ? 'Still going. Ask again in a moment. Every file found so far is already ' +
+      'searchable by name, folder and date; the percentage is how many have also been read.' : undefined,
   };
 }
 
@@ -154,75 +170,6 @@ function probeScan(dir, limit) {
   };
 }
 
-// Can we find footage WITHOUT the user ever supplying a path? If yes, the folder
-// picker becomes optional and users never meet a filesystem path at all.
-// v0.0.6 checked a hardcoded list — Movies, Pictures, Desktop, Documents, Downloads —
-// and so missed "~/Premire Pro Videos" entirely. Guessing folder NAMES is the same error
-// as assuming tidy folders. Enumerate what exists, then rank by how much media is in it.
-function probeDiscover(opts = {}) {
-  const home = os.homedir();
-  const CAP = opts.cap || 600, BUDGET_MS = opts.budget_ms || 20000;
-  const t0 = Date.now();
-  const SKIP_TOP = /^(Library|Applications|Public|\.Trash|Music|node_modules|go|Developer|AppData|NTUSER\.DAT.*|snap|\.local|\.config)$/i;
-
-  const roots = [];
-  const add = (label, p) => { try { if (fs.statSync(p).isDirectory()) roots.push({ label, path: p }); } catch {} };
-
-  // Everything at the top of home — no name guessing.
-  try {
-    for (const n of fs.readdirSync(home)) {
-      if (n.startsWith('.') || SKIP_TOP.test(n)) continue;
-      add('home', path.join(home, n));
-    }
-  } catch (e) { /* home unreadable */ }
-  // Every mounted volume.
-  // Every mounted volume, on whichever OS this is. The boot volume is the same
-  // filesystem as home, so indexing it would double the work — skip by device id.
-  let bootDev = null; try { bootDev = fs.statSync(home).dev; } catch {}
-  for (const vp of (core ? core.volumeRoots() : [])) {
-    try { if (bootDev !== null && fs.statSync(vp).dev === bootDev) continue; } catch {}
-    add('volume', vp);
-  }
-  // Cloud roots live under Library, which we skipped above.
-  // Cloud roots differ per OS and sit under folders we skip.
-  for (const c of ['Library/Mobile Documents/com~apple~CloudDocs',  // macOS iCloud
-                   'OneDrive', 'OneDrive - Personal',               // Windows
-                   'Nextcloud', 'ownCloud'])
-    add('cloud', path.join(home, c));
-
-  const found = [];
-  let truncated = false;
-  for (const r of roots) {
-    if (Date.now() - t0 > BUDGET_MS) { truncated = true; break; }
-    let files = [];
-    try { files = core ? core.walkTree(r.path, [], 0, CAP) : []; } catch (e) { found.push({ ...r, error: e.code }); continue; }
-    if (!files.length) continue;
-    const byExt = {};
-    let bytes = 0;
-    for (const f of files) { const e = path.extname(f.p).toLowerCase(); byExt[e] = (byExt[e] || 0) + 1; bytes += f.size; }
-    found.push({
-      label: r.label, path: r.path,
-      media_files: files.length,
-      capped: files.length >= CAP,          // real count is higher
-      gb: +(bytes / 1e9).toFixed(2),
-      extensions: Object.fromEntries(Object.entries(byExt).sort((a, b) => b[1] - a[1]).slice(0, 6)),
-      sample: files.slice(0, 3).map(f => path.basename(f.p)),
-    });
-  }
-  found.sort((a, b) => (b.media_files || 0) - (a.media_files || 0));
-
-  return {
-    verdict: found.length
-      ? `CAN DISCOVER WITHOUT A GRANT, found media in ${found.length} location(s) with no path supplied`
-      : 'NO MEDIA FOUND, either nothing here, or reads are blocked',
-    method: 'enumerated every top-level folder in home plus every mounted volume, then ranked by media density. No folder names are assumed.',
-    scan_budget_hit: truncated,
-    locations_with_media: found,
-    elapsed_ms: Date.now() - t0,
-    note: 'Counts marked capped:true are lower bounds, the sampler stopped early. A macOS permission dialog during this run is TCC asking on Claude Desktop\'s behalf; allowing once covers every future scan.',
-  };
-}
-
 // ---------------- MCP stdio ----------------
 // These descriptions are the ONLY signal that routes the model here. Vague ones lose:
 // asked "find photos of people walking", Claude reached for a generic filesystem tool and
@@ -242,7 +189,8 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: {} } },
 
   { name: 'search', description:
-      'Search the user\'s indexed media. MATCHES ON: filename, folder and project names, camera model, lens, ' +
+      'Search the user\'s indexed media. MATCHES ON: filename (and the original name of a photo in the Photos ' +
+      'library), folder and project names, camera model, lens, ' +
       'date, file kind, GPS presence, and any tags the user has added. ' +
       'DOES NOT YET MATCH IMAGE OR AUDIO CONTENT. It cannot find "people walking", "a red car" or "sunset" ' +
       'unless those words appear in a filename, folder or tag. If the user asks about content, say so plainly ' +
@@ -275,7 +223,8 @@ const TOOLS = [
   { name: 'scan', description:
       'Build or update the index. Needs no path. It finds everything itself. Returns IMMEDIATELY with a job ' +
       'id and runs in the background, so never wait on it. Call this when describe_archive reports an empty ' +
-      'index, or when the user has added new footage. Re-scans are near-instant: unchanged files are skipped.',
+      'index, or when the user has added new footage. Every file found is searchable by name within seconds; ' +
+      'reading them for camera, place and length follows. Re-scans are near-instant: unchanged files are skipped.',
     inputSchema: { type: 'object', properties: { path: { type: 'string' }, limit: { type: 'number' } } } },
 
   { name: 'scan_status', description: 'Progress of a background scan. Search already works on whatever is indexed so far.',
@@ -408,19 +357,6 @@ const PROMPTS = [
 
 const send = m => process.stdout.write(JSON.stringify(m) + '\n');
 
-// Array-typed user_config expands into ARGV (the pattern Anthropic's own Filesystem
-// extension uses). Substituting an array into a string env var does NOT expand — v0.0.3
-// received the literal "${user_config.probe_directories}" and silently scanned nothing.
-// Accept argv first, fall back to env, and never treat an unexpanded template as a path.
-const isTemplate = s => /^\$\{.*\}$/.test(s);
-function grantedDirs() {
-  const fromArgv = process.argv.slice(2);
-  const fromEnv = (process.env.PROBE_DIRS || '').split(/[\n,]/);
-  return [...fromArgv, ...fromEnv]
-    .map(s => String(s).trim())
-    .filter(s => s && !isTemplate(s) && fs.existsSync(s));
-}
-
 let buf = '';
 process.stdin.on('data', c => {
   buf += c;
@@ -435,10 +371,13 @@ process.stdin.on('data', c => {
 
 function handle(req) {
   const { id, method, params } = req;
-  if (method === 'initialize')
+  if (method === 'initialize') {
+    // Opening the catalog here clears a scan the last session left "running".
+    try { db(); } catch (e) { log('catalog not opened:', e.message); }
     return send({ jsonrpc: '2.0', id, result: { protocolVersion: '2025-06-18',
       capabilities: { tools: {}, prompts: {} },
       serverInfo: { name: 'yellide', version: PKG_VERSION } } });
+  }
   // Claude Desktop lists these under "/". It is the only place Yellide is browsable.
   if (method === 'prompts/list')
     return send({ jsonrpc: '2.0', id, result: { prompts: PROMPTS.map(

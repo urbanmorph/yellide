@@ -24,22 +24,37 @@ let found = 0, indexed = 0, skipped = 0;
 const perRoot = [];
 
 try {
+  // List every root before reading any, so the whole archive is searchable by name within
+  // minutes, not after the last file of the last drive has been hashed.
+  const listed = new Map();
   for (const root of roots) {
+    try {
+      const l = core.inventory(db, root, { cap, writeMarker });
+      listed.set(root, l);
+      found += l.files.length;
+      progress.run(found, indexed, skipped, jobId);
+      parentPort?.postMessage({ type: 'listed', root, files: l.files.length, new: l.listed });
+    } catch (e) { perRoot.push({ root, error: e.code || e.message }); }
+  }
+  for (const root of roots) {
+    if (!listed.has(root)) continue;
     const t0 = Date.now();
     let r;
     try {
-      r = core.scan(db, root, { cap, writeMarker, onProgress: p => {
-        progress.run(found + p.indexed, indexed + p.indexed, skipped + p.unchanged + p.placeholders, jobId);
+      r = core.scan(db, root, { cap, writeMarker, listed: listed.get(root), onProgress: p => {
+        progress.run(found, indexed + p.indexed, skipped + p.unchanged + p.placeholders, jobId);
         parentPort?.postMessage({ type: 'progress', root, indexed: indexed + p.indexed });
       }});
     } catch (e) {
       perRoot.push({ root, error: e.code || e.message });
       continue;
     }
-    found += r.found; indexed += r.indexed;
+    indexed += r.indexed;
     skipped += (r.unchanged || 0) + (r.placeholders || 0);
-    perRoot.push({ root, found: r.found, indexed: r.indexed, unchanged: r.unchanged,
-                   placeholders: r.placeholders, missing: r.missing, ms: Date.now() - t0 });
+    perRoot.push({ root, found: r.found, listed: r.listed, indexed: r.indexed, unchanged: r.unchanged,
+                   placeholders: r.placeholders, photos_only_in_icloud: r.photos, missing: r.missing,
+                   ms: Date.now() - t0 });
+    listed.delete(root);                       // its file list is no longer needed
     progress.run(found, indexed, skipped, jobId);
     // Let the parent narrate progress without it having to poll the database.
     parentPort?.postMessage({ type: 'progress', root, found, indexed, skipped });

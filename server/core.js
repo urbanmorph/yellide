@@ -6,10 +6,17 @@ const exif = require('./exif.js');
 const audio = require('./audio.js');
 const storage = require('./storage.js');
 const photos = require('./photos.js');
+const video = require('./video.js');
 
 // A "video index" would miss a terabyte of podcast recordings entirely. Media, not video.
-const VIDEO = new Set(['.mp4','.mov','.m4v','.mxf','.avi','.mkv','.mts','.m2ts','.braw','.r3d','.ari','.insv','.lrv','.webm']);
-const AUDIO = new Set(['.wav','.aif','.aiff','.mp3','.m4a','.flac','.aac','.ogg','.opus','.caf','.wma']);
+// Older phones wrote 3GP, SD camcorders MPEG-2 (.mpg .mod), AVCHD ones MPEG-TS (.mts .tod),
+// MiniDV tapes .dv, Windows .wmv. Leaving them out left a decade of family video unseen.
+const VIDEO = new Set(['.mp4','.mov','.m4v','.mxf','.avi','.mkv','.mts','.m2ts','.m2t','.braw','.r3d','.ari',
+                       '.insv','.lrv','.webm','.3gp','.3g2','.mpg','.mpeg','.m2v','.vob','.mod','.tod','.dv',
+                       '.wmv','.asf','.flv','.f4v','.ogv']);
+const AUDIO = new Set(['.wav','.aif','.aiff','.mp3','.m4a','.m4b','.flac','.aac','.ogg','.opus','.caf','.wma','.amr']);
+// The containers the atom parser reads. Everything else has its own parser or none.
+const ISO_BMFF = new Set(['.mp4','.mov','.m4v','.3gp','.3g2','.insv','.lrv','.m4a','.m4b','.aac','.caf']);
 // What you shot, not what you wrote: video, audio and stills. No documents.
 const MEDIA = new Set([...VIDEO, ...AUDIO, ...exif.IMAGE]);
 const KIND = ext => VIDEO.has(ext) ? 'video' : AUDIO.has(ext) ? 'audio'
@@ -91,7 +98,10 @@ function walkTree(dir, out, depth = 0, cap = 5000, maxDepth = 8, stats = {}) {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) {
       if (SKIP.test(e.name) || PKG_DIR.test(e.name)) continue;
-      if (MEDIA_LIBRARY.test(e.name)) { walkLibrary(p, out, cap, stats); continue; }
+      if (MEDIA_LIBRARY.test(e.name)) {
+        if (/\.photoslibrary$/i.test(e.name)) (stats.libraries ||= []).push(p);
+        walkLibrary(p, out, cap, stats); continue;
+      }
       walkTree(p, out, depth + 1, cap, maxDepth, stats);
     }
     else if (MEDIA.has(path.extname(e.name).toLowerCase())) {
@@ -150,7 +160,7 @@ function atoms(buf, start, end, cb) {
 function extract(file) {
   const kind = KIND(path.extname(file).toLowerCase());
   const ext = path.extname(file).toLowerCase();
-  if (kind === 'audio' && ext !== '.m4a' && ext !== '.aac' && ext !== '.caf') {
+  if (kind === 'audio' && !ISO_BMFF.has(ext)) {
     const r = audio.extractAudio(file, kind);
     return { ...r, content_key: r.dematerialised ? null : contentKey(file) };
   }
@@ -159,7 +169,7 @@ function extract(file) {
     // Never hash a placeholder either — hashing reads the first and last megabyte.
     return { ...r, content_key: r.dematerialised ? null : contentKey(file) };
   }
-  return extractIsoBmff(file, kind);
+  return extractVideo(file, kind, ext);
 }
 
 // Identity is the same for every format — it is the one thing that must never differ.
@@ -174,7 +184,7 @@ function contentKey(file) {
   } finally { fs.closeSync(fd); }
 }
 
-function extractIsoBmff(file, kind) {
+function extractVideo(file, kind, ext) {
   const st = fs.statSync(file);
   if (exif.isDataless(st))
     return { size: st.size, kind: kind || 'video', dematerialised: true, container: null,
@@ -187,6 +197,14 @@ function extractIsoBmff(file, kind) {
               shot_at_local: null, meta_bytes: 0,
               dematerialised: false };
   try {
+    if (!ISO_BMFF.has(ext)) {
+      // AVI, MKV and the MPEG streams have parsers of their own; MXF, BRAW, R3D and the rest are
+      // found and hashed, and dated by their name or their file when nothing inside says.
+      if (video.BY_EXT[ext]) { try { Object.assign(r, video.BY_EXT[ext](fd, st.size)); } catch {} }
+      delete r.camera_parts;
+      r.content_key = contentKey(file);
+      return r;
+    }
     const tops = topLevel(fd, st.size);
     const ftyp = tops.find(a => a.type === 'ftyp');
     if (ftyp) { r.container = 'ISO-BMFF'; const b = Buffer.alloc(4); fs.readSync(fd, b, 0, 4, ftyp.off + 8); r.brand = b.toString('latin1').trim(); }
@@ -224,13 +242,9 @@ function extractIsoBmff(file, kind) {
         if (CONTAINERS.has(t) || VENDOR_BOX.test(t)) atoms(b, s, e, visit);
       });
     }
-    const MB = 1 << 20, h = crypto.createHash('sha256');
-    const a = Buffer.alloc(Math.min(MB, st.size)); fs.readSync(fd, a, 0, a.length, 0); h.update(a);
-    if (st.size > MB) { const b2 = Buffer.alloc(MB); fs.readSync(fd, b2, 0, MB, st.size - MB); h.update(b2); }
-    h.update(String(st.size));
     r.camera = pickCamera(r.camera_parts);
     delete r.camera_parts;
-    r.content_key = h.digest('hex');
+    r.content_key = contentKey(file);
   } finally { fs.closeSync(fd); }
   return r;
 }
@@ -247,6 +261,37 @@ function tier1(fullPath, root) {
   return tags;
 }
 
+// When the file itself carries no date. Phones, chat apps and screenshot tools write the moment
+// into the name: "WhatsApp Image 2026-02-16 at 14.35.13", "IMG-20240612-WA0004",
+// "PXL_20230721_155524970", "Screenshot 2024-12-21 at 9.14.23 PM", "2014-09-02 18.15.21".
+// Separators must agree, the year must be plausible, and a run of digits or hex is never split.
+const NAME_DATE = /(?<![0-9a-f])((?:19[89]|20[0-4])\d)([-_.]?)(0[1-9]|1[0-2])\2(0[1-9]|[12]\d|3[01])(?!\d)(?:[^\d]{0,4}?(?:at\s*)?([01]?\d|2[0-3])[.:_-]?([0-5]\d)[.:_-]?([0-5]\d)\d*\s*([AP]M)?)?/i;
+const pad2 = n => String(n).padStart(2, '0');
+function dateFromName(name) {
+  const m = String(name).match(NAME_DATE);
+  if (!m || +m[1] > new Date().getFullYear() + 1) return null;
+  const d = `${m[1]}-${m[3]}-${m[4]}`;
+  if (new Date(d + 'T00:00:00Z').getUTCDate() !== +m[4]) return null;       // 2023-02-30
+  if (m[5] == null) return d;
+  let h = +m[5];
+  if (m[8]) { const pm = /p/i.test(m[8]); if (h > 12) return d; h = (h % 12) + (pm ? 12 : 0); }
+  return `${d} ${pad2(h)}:${m[6]}:${m[7]}`;
+}
+const localStamp = ms => {
+  const t = new Date(ms);
+  return `${t.getFullYear()}-${pad2(t.getMonth() + 1)}-${pad2(t.getDate())} ` +
+         `${pad2(t.getHours())}:${pad2(t.getMinutes())}:${pad2(t.getSeconds())}`;
+};
+// Fill a missing date: the name first, then the file's own timestamp, which may only say when
+// it was copied, so it is marked as such and never groups files into a shoot.
+function fallbackDate(x, name, mtime) {
+  if (x.shot_at || x.shot_at_local) return x;
+  const n = dateFromName(name);
+  const local = n || (mtime ? localStamp(mtime) : null);
+  if (!local) return x;
+  return { ...x, shot_at_local: local, shot_at: local.replace(' ', 'T'), dated_by: n ? 'filename' : 'file' };
+}
+
 // Camera blocks use colons in the date part. Normalise so ordering and display both work.
 function normDate(v) {
   if (!v) return null;
@@ -257,16 +302,15 @@ function normDate(v) {
 // ---- storage ----
 const openDb = storage.open;                 // persistent catalog + migrations
 
-// Incremental by design: a file whose size and mtime are unchanged is never re-opened,
-// never re-hashed, never re-parsed. The first full scan of a real machine took 1h42m;
-// the second must take seconds or nobody will ever rescan.
-function scan(db, root, opts = {}) {
-  const cap = opts.cap || 20000;
+// Every file the walk can see, and how deep it looks. A cap of 20,000 stopped real archives
+// part way; this one exists only so a runaway walk cannot exhaust memory.
+const SCAN_CAP = 500000, SCAN_DEPTH = 24;
+
+// The walk, the drive marker and the volume row: what both passes need, done once.
+function walkRoot(db, root, opts) {
   const now = new Date().toISOString();
   const walk = {};
-  const files = walkTree(root, [], 0, cap, 8, walk);
-  const portableRoot = toPortable(root);
-
+  const files = walkTree(root, [], 0, opts.cap || SCAN_CAP, SCAN_DEPTH, walk);
   const marker = opts.writeMarker === false ? { id: null }
                  : storage.volumeMarker(root, { consent: opts.consent });
   let volumeId = null;
@@ -276,65 +320,162 @@ function scan(db, root, opts = {}) {
       .run(marker.id, path.basename(root), now, now);
     volumeId = db.prepare('select id from volume where marker_id = ?').get(marker.id).id;
   }
+  return { root, portableRoot: toPortable(root), files, walk, volumeId, now, cap: opts.cap || SCAN_CAP };
+}
 
-  const findLoc = db.prepare('select id, asset_id, size, mtime, state from location where root = ? and rel_path = ?');
-  const touchLoc = db.prepare('update location set last_seen_at = ?, state = ? where id = ?');
-  const insAsset = db.prepare(`insert into asset(content_key,kind,container,brand,duration_s,width,height,
-      shot_at,shot_at_local,camera,lens,gps,gps_lat,gps_lon,iso,fnumber,focal_mm,
-      sample_rate,channels,title,artist,description,size,first_seen_at,last_indexed_at)
-      values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-      on conflict(content_key) do update set last_indexed_at = excluded.last_indexed_at`);
-  const getAsset = db.prepare('select id from asset where content_key = ?');
-  const insLoc = db.prepare(`insert into location(asset_id,volume_id,root,rel_path,filename,state,size,mtime,first_seen_at,last_seen_at)
-      values(?,?,?,?,?,?,?,?,?,?)
-      on conflict(root,rel_path) do update set asset_id=excluded.asset_id, state=excluded.state,
-        size=excluded.size, mtime=excluded.mtime, last_seen_at=excluded.last_seen_at`);
-  const delAnn = db.prepare("delete from annotation where asset_id = ? and source in ('folder','filename')");
-  const insAnn = db.prepare('insert into annotation(asset_id,key,value,source,created_at) values(?,?,?,?,?)');
+const stmtCache = new WeakMap();
+function stmts(db) {
+  let q = stmtCache.get(db);
+  if (q) return q;
+  stmtCache.set(db, q = {
+    findLoc: db.prepare(`select l.id, l.asset_id, l.size, l.mtime, l.state, a.provisional
+                         from location l left join asset a on a.id = l.asset_id where l.root = ? and l.rel_path = ?`),
+    touchLoc: db.prepare('update location set last_seen_at = ?, state = ? where id = ?'),
+    insAsset: db.prepare(`insert into asset(content_key,kind,container,brand,duration_s,width,height,
+        shot_at,shot_at_local,camera,lens,gps,gps_lat,gps_lon,iso,fnumber,focal_mm,
+        sample_rate,channels,title,artist,description,size,first_seen_at,last_indexed_at,provisional,dated_by)
+        values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        on conflict(content_key) do update set last_indexed_at = excluded.last_indexed_at`),
+    getAsset: db.prepare('select id from asset where content_key = ?'),
+    insLoc: db.prepare(`insert into location(asset_id,volume_id,root,rel_path,filename,state,size,mtime,first_seen_at,last_seen_at)
+        values(?,?,?,?,?,?,?,?,?,?)
+        on conflict(root,rel_path) do update set asset_id=excluded.asset_id, state=excluded.state,
+          size=excluded.size, mtime=excluded.mtime, last_seen_at=excluded.last_seen_at`),
+    delAnn: db.prepare("delete from annotation where asset_id = ? and source in ('folder','filename')"),
+    insAnn: db.prepare('insert into annotation(asset_id,key,value,source,created_at) values(?,?,?,?,?)'),
+  });
+  return q;
+}
 
-  const r = { found: files.length, indexed: 0, unchanged: 0, placeholders: 0, failed: 0, meta_bytes: 0 };
-  const tick = opts.onProgress, every = opts.progressEvery || 200;
-  let sinceTick = 0, lastCommit = Date.now();
+// One asset row from whatever is known. Provisional ones are keyed by where they were seen.
+function putAsset(db, key, x, now, provisional) {
+  const q = stmts(db);
+  q.insAsset.run(key, x.kind || null, x.container || null, x.brand || null,
+    x.duration_s ?? null, x.width ?? null, x.height ?? null, x.shot_at ?? null, x.shot_at_local ?? null,
+    x.camera ?? null, x.lens ?? null, x.gps ?? null, x.gps_lat ?? null, x.gps_lon ?? null,
+    x.iso ?? null, x.fnumber ?? null, x.focal_mm ?? null, x.sample_rate ?? null, x.channels ?? null,
+    x.title ?? null, x.artist ?? null, x.description ?? null, x.size ?? null, now, now,
+    provisional ? 1 : 0, x.dated_by ?? null);
+  return q.getAsset.get(key).id;
+}
+// A provisional asset becomes the real one in place. A date Photos gave it outranks one the
+// file only implies by its name or timestamp.
+function promote(db, id, x, now) {
+  const old = db.prepare('select * from asset where id = ?').get(id);
+  const d = storage.rankOf(old) < storage.rankOf(x) ? old : x;
+  db.prepare(`update asset set content_key=?, kind=?, container=?, brand=?, duration_s=?, width=?, height=?,
+      shot_at=?, shot_at_local=?, dated_by=?, camera=?, lens=?, gps=?, gps_lat=?, gps_lon=?, iso=?, fnumber=?,
+      focal_mm=?, sample_rate=?, channels=?, title=?, artist=?, description=?, size=?, last_indexed_at=?,
+      provisional=0 where id=?`).run(x.content_key, x.kind || old.kind, x.container || null, x.brand || null,
+    x.duration_s ?? old.duration_s, x.width ?? old.width, x.height ?? old.height,
+    d.shot_at ?? null, d.shot_at_local ?? null, d.dated_by ?? null, x.camera ?? old.camera, x.lens ?? null,
+    x.gps ?? old.gps, x.gps_lat ?? old.gps_lat, x.gps_lon ?? old.gps_lon, x.iso ?? null, x.fnumber ?? null,
+    x.focal_mm ?? null, x.sample_rate ?? null, x.channels ?? null, x.title ?? null, x.artist ?? null,
+    x.description ?? null, x.size ?? old.size, now, id);
+}
+function tagFromPath(db, id, file, root, now) {
+  const q = stmts(db);
+  q.delAnn.run(id);
+  for (const t of tier1(file, root)) q.insAnn.run(id, t.key, t.value, t.source, now);
+}
+
+// Commit at least once a second and every `every` files, so progress is visible, a crash
+// loses seconds rather than hours, and a caption written meanwhile never waits long.
+function batcher(db, every, tick) {
+  let since = 0, last = Date.now();
+  return r => {
+    if (++since >= every || Date.now() - last > 1000) {
+      since = 0; last = Date.now();
+      db.exec('commit'); if (tick) tick(r); db.exec('begin immediate');
+    }
+  };
+}
+
+// Pass one: list every file nobody has listed yet, by name, folder and a best-guess date, at
+// the cost of a stat. Search works on all of it at once; reading the files follows. The first
+// full read of a real archive took 1h42m, and nothing was findable until a file's turn came.
+// Online-only placeholders are listed the same way and are never read at all.
+function inventory(db, root, opts = {}) {
+  const ctx = walkRoot(db, root, opts);
+  const q = stmts(db), r = { listed: 0 };
+  const commit = batcher(db, opts.progressEvery || 500, opts.onProgress);
+  db.exec('begin immediate');
+  try {
+    for (const f of ctx.files) {
+      const rel = toPortable(path.relative(root, f.p));
+      const prev = q.findLoc.get(ctx.portableRoot, rel);
+      if (prev && prev.asset_id != null) continue;
+      const name = path.basename(f.p);
+      const x = fallbackDate({ kind: KIND(path.extname(name).toLowerCase()), size: f.size }, name, f.mtime);
+      const id = putAsset(db, `list:${ctx.portableRoot}/${rel}`, x, ctx.now, true);
+      q.insLoc.run(id, ctx.volumeId, ctx.portableRoot, rel, name, exif.isDataless(f) ? 'dematerialised' : 'present',
+                   f.size, f.mtime, ctx.now, ctx.now);
+      tagFromPath(db, id, f.p, root, ctx.now);
+      storage.reindex(db, id);
+      r.listed++;
+      commit(r);
+    }
+    db.exec('commit');
+  } catch (e) { db.exec('rollback'); throw e; }
+  return { ...ctx, listed: r.listed };
+}
+
+// Pass two: read what pass one listed, and anything that changed. Incremental by design: a
+// file whose size and mtime are unchanged is never re-opened, re-hashed or re-parsed, so a
+// rescan of a whole machine takes seconds.
+function scan(db, root, opts = {}) {
+  const ctx = opts.listed || inventory(db, root, opts);
+  const { files, walk, volumeId, now, portableRoot } = ctx;
+  const q = stmts(db);
+  const r = { found: files.length, listed: ctx.listed, indexed: 0, unchanged: 0, placeholders: 0,
+              failed: 0, meta_bytes: 0 };
+  const commit = batcher(db, opts.progressEvery || 200, opts.onProgress);
+  const seen = new Set();
   db.exec('begin immediate');
   try {
     for (const f of files) {
       const rel = toPortable(path.relative(root, f.p));
-      const prev = findLoc.get(portableRoot, rel);
-      if (prev && prev.size === f.size && Math.abs((prev.mtime || 0) - f.mtime) < 1000 && prev.state === 'present') {
-        touchLoc.run(now, 'present', prev.id); r.unchanged++; continue;      // untouched: skip entirely
+      seen.add(rel);
+      const prev = q.findLoc.get(portableRoot, rel);
+      const same = prev && prev.asset_id != null && prev.size === f.size && Math.abs((prev.mtime || 0) - f.mtime) < 1000;
+      if (same && prev.state === 'present' && !prev.provisional) {
+        q.touchLoc.run(now, 'present', prev.id); r.unchanged++; continue;      // untouched: skip entirely
       }
+      // Still online-only: a stat said so, and reading it would download it.
+      if (same && exif.isDataless(f)) { q.touchLoc.run(now, 'dematerialised', prev.id); r.placeholders++; continue; }
 
-      let x; try { x = extract(f.p); } catch { r.failed++; continue; }
-      x.shot_at_local = normDate(x.shot_at_local);
+      // A file that cannot be read is still there: it stays listed, and is tried again next scan.
+      let x; try { x = extract(f.p); }
+      catch { r.failed++; if (prev) q.touchLoc.run(now, prev.state === 'dematerialised' ? 'dematerialised' : 'present', prev.id); continue; }
       if (x.dematerialised) {
-        // Indexed at Tier 1 only, never read, never hashed.
-        insLoc.run(null, volumeId, portableRoot, rel, path.basename(f.p), 'dematerialised', f.size, f.mtime, now, now);
+        // Listed but never read, never hashed. Kept on its provisional asset, so it is findable.
+        if (prev) q.touchLoc.run(now, 'dematerialised', prev.id);
         r.placeholders++; continue;
       }
+      x.shot_at_local = normDate(x.shot_at_local);
+      x = fallbackDate(x, path.basename(f.p), f.mtime);
       r.meta_bytes += x.meta_bytes || 0;
 
-      insAsset.run(x.content_key, x.kind || null, x.container || null, x.brand || null,
-        x.duration_s ?? null, x.width ?? null, x.height ?? null, x.shot_at ?? null, x.shot_at_local ?? null,
-        x.camera ?? null, x.lens ?? null, x.gps ?? null, x.gps_lat ?? null, x.gps_lon ?? null,
-        x.iso ?? null, x.fnumber ?? null, x.focal_mm ?? null, x.sample_rate ?? null, x.channels ?? null,
-        x.title ?? null, x.artist ?? null, x.description ?? null, x.size ?? null, now, now);
-      const id = getAsset.get(x.content_key).id;
-      insLoc.run(id, volumeId, portableRoot, rel, path.basename(f.p), 'present', f.size, f.mtime, now, now);
-
+      // What was known before the file was read becomes what it turned out to be. Its id is kept
+      // when nothing else has those bytes, because the agent may already be holding it.
+      let id;
+      if (prev?.provisional && !q.getAsset.get(x.content_key)) promote(db, (id = prev.asset_id), x, now);
+      else {
+        id = putAsset(db, x.content_key, x, now, false);
+        if (prev?.provisional) storage.adopt(db, prev.asset_id, id);
+      }
+      q.insLoc.run(id, volumeId, portableRoot, rel, path.basename(f.p), 'present', f.size, f.mtime, now, now);
       // Machine-derived tags are rebuilt each time; human ones are never touched.
-      delAnn.run(id);
-      const tags = tier1(f.p, root);
-      for (const t of tags) insAnn.run(id, t.key, t.value, t.source, now);
-
+      tagFromPath(db, id, f.p, root, now);
       storage.reindex(db, id);
       r.indexed++;
-      // Commit periodically so progress is visible and a crash loses seconds, not hours,
-      // and at least once a second so a caption written meanwhile never waits long.
-      if (++sinceTick >= every || Date.now() - lastCommit > 1000) {
-        sinceTick = 0; lastCommit = Date.now();
-        db.exec('commit'); if (tick) tick(r); db.exec('begin immediate');
-      }
+      commit(r);
     }
+
+    r.dated = dateUndated(db, portableRoot);
+    // A walk cut short never saw the rest, so it cannot say which originals are in iCloud.
+    r.photos = 0;
+    if (!walk.capped) for (const lib of walk.libraries || []) r.photos += syncPhotos(db, ctx, lib, seen);
 
     // The index never forgets: vanished files are marked, never deleted. A walk cut short
     // by the cap never saw the rest, so it cannot say what has vanished.
@@ -342,28 +483,86 @@ function scan(db, root, opts = {}) {
     r.missing = r.capped ? 0 : db.prepare(`update location set state = 'missing'
                             where root = ? and last_seen_at < ? and state != 'missing'`)
                   .run(portableRoot, now).changes;
-    if (!r.capped) { r.in_icloud = inICloud(db, root, portableRoot); r.missing -= r.in_icloud; }
     storage.noteScanLimits(db, portableRoot, r.capped || r.too_deep
-      ? { cap, found: r.found, too_deep: r.too_deep, capped: r.capped, at: now } : null);
+      ? { cap: ctx.cap, depth: SCAN_DEPTH, found: r.found, too_deep: r.too_deep, capped: r.capped, at: now } : null);
     db.exec('commit');
   } catch (e) { db.exec('rollback'); throw e; }
   return r;
 }
 
-// Missing originals inside a Photos library that Photos says are safe in iCloud are
-// dematerialised, not missing. Re-decided every scan, so a photo later deleted in Photos
-// goes back to missing.
-function inICloud(db, root, portableRoot) {
-  const rows = db.prepare(`select id, rel_path from location where root = ? and state = 'missing'
-                           and asset_id is not null and rel_path like '%.photoslibrary/originals/%'`).all(portableRoot);
-  const libs = new Map(), set = db.prepare("update location set state = 'dematerialised' where id = ?");
+// Files indexed before dates were guessed are unchanged, so they are never read again. Date
+// them from what the catalog already holds. Once done, this finds nothing.
+function dateUndated(db, portableRoot) {
+  const rows = db.prepare(`select a.id, l.filename, l.mtime from asset a join location l on l.asset_id = a.id
+                           where l.root = ? and l.mtime is not null and a.shot_at is null and a.shot_at_local is null
+                           group by a.id`).all(portableRoot);
+  const set = db.prepare('update asset set shot_at = ?, shot_at_local = ?, dated_by = ? where id = ?');
   let n = 0;
-  for (const r of rows) {
-    const [lib, inside] = r.rel_path.split('/originals/');
-    if (!libs.has(lib)) libs.set(lib, photos.cloudOriginals(path.join(root, fromPortable(lib))));
-    if (libs.get(lib).has(inside)) { set.run(r.id); n++; }
+  for (const row of rows) {
+    const d = fallbackDate({}, row.filename, row.mtime);
+    if (!d.dated_by) continue;
+    set.run(d.shot_at, d.shot_at_local, d.dated_by, row.id); storage.reindex(db, row.id); n++;
   }
   return n;
+}
+
+// Everything Photos lists in a library, against what the walk found on disk.
+//   on disk          → gains the original name, and the date, place and camera if it had none
+//   only in iCloud   → stays known, or becomes known from Photos' own record
+//   trashed, or gone → untouched here, so the missing pass marks it
+// "Optimise Mac Storage" deletes local originals that are safe in iCloud, and half a real
+// library had never been on the Mac at all. Re-decided every scan, so a photo deleted in
+// Photos goes back to missing. Writes only what differs, so an unchanged library costs reads.
+function syncPhotos(db, ctx, libPath, seen) {
+  const records = photos.libraryRecords(libPath);
+  if (!records.length) return 0;
+  const q = stmts(db), libRel = toPortable(path.relative(ctx.root, libPath));
+  const under = libRel ? libRel + '/originals/' : 'originals/';
+  const hasName = db.prepare("select 1 from annotation where asset_id = ? and key = 'original_name' and value = ?");
+  const asset = db.prepare(`select id, camera, gps, ${storage.dateRank('asset')} rank from asset where id = ?`);
+  const fill = db.prepare(`update asset set camera = coalesce(camera, ?), gps = coalesce(gps, ?),
+      gps_lat = coalesce(gps_lat, ?), gps_lon = coalesce(gps_lon, ?),
+      shot_at = case when ? then ? else shot_at end, shot_at_local = case when ? then ? else shot_at_local end,
+      dated_by = case when ? then 'photos' else dated_by end where id = ?`);
+  // Gains the original name, and the date, place and camera if the file did not say.
+  const enrich = (assetId, p, gps) => {
+    const a = asset.get(assetId);
+    if (!a) return;
+    let changed = false;
+    if (p.original && !hasName.get(a.id, p.original)) {
+      q.insAnn.run(a.id, 'original_name', p.original, 'photos', ctx.now); changed = true;
+    }
+    const redate = p.shot_at_local && a.rank > 1 ? 1 : 0;
+    if (redate || (!a.camera && p.camera) || (!a.gps && gps)) {
+      fill.run(p.camera, gps, p.gps_lat, p.gps_lon, redate, p.shot_at, redate, p.shot_at_local, redate, a.id);
+      changed = true;
+    }
+    if (changed) storage.reindex(db, a.id);
+  };
+  let added = 0;
+  for (const p of records) {
+    const rel = under + p.key;
+    const gps = p.gps_lat != null ? `${p.gps_lat},${p.gps_lon}` : null;
+    const onDisk = seen.has(rel);
+    if (!onDisk && !p.inCloud) continue;
+    const loc = q.findLoc.get(ctx.portableRoot, rel);
+    if (loc?.asset_id != null) {
+      if (!onDisk) q.touchLoc.run(ctx.now, 'dematerialised', loc.id);
+      enrich(loc.asset_id, p, gps);
+      continue;
+    }
+    if (onDisk) continue;
+    const id = putAsset(db, 'photos:' + (p.uuid || libRel + '/' + p.key),
+      { ...p, kind: p.kind || KIND(path.extname(p.key).toLowerCase()), gps, size: null,
+        dated_by: p.shot_at_local ? 'photos' : null }, ctx.now, true);
+    q.insLoc.run(id, ctx.volumeId, ctx.portableRoot, rel, path.basename(p.key), 'dematerialised',
+                 null, null, ctx.now, ctx.now);
+    tagFromPath(db, id, path.join(ctx.root, fromPortable(rel)), ctx.root, ctx.now);
+    if (p.original && !hasName.get(id, p.original)) q.insAnn.run(id, 'original_name', p.original, 'photos', ctx.now);
+    storage.reindex(db, id);
+    added++;
+  }
+  return added;
 }
 
 function search(db, q, limit = 10) {
@@ -375,4 +574,6 @@ function search(db, q, limit = 10) {
   return rows;
 }
 
-module.exports = { walkTree, extract, contentKey, tier1, openDb, scan, search, storage, normDate, volumeRoots, toPortable, fromPortable, VIDEO, AUDIO, MEDIA, KIND, IMAGE: exif.IMAGE, DESIGN: exif.DESIGN };
+module.exports = { walkTree, extract, contentKey, tier1, openDb, inventory, scan, search, storage, normDate,
+                   dateFromName, volumeRoots, toPortable, fromPortable, SCAN_CAP, SCAN_DEPTH,
+                   VIDEO, AUDIO, MEDIA, KIND, IMAGE: exif.IMAGE, DESIGN: exif.DESIGN };

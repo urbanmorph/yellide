@@ -35,6 +35,7 @@ function locationsFor(db, assetId) {
   const live = rows.filter(r => r.state === 'present' || r.state === 'offline');
   return { best: (live[0] || rows[0]) || null, all: rows, live: live.length };
 }
+const inPhotosLibrary = loc => /\.photoslibrary\//i.test((loc.root || '') + '/' + loc.rel_path);
 const fullPath = loc => loc ? path.join(loc.root, loc.rel_path.split('/').join(path.sep)) : null;
 
 // ---------------------------------------------------------------- describe_archive
@@ -59,14 +60,23 @@ function describeArchive(db) {
                             group by root order by n desc limit 8`).all();
   const cov = db.prepare(`select
       round(100.0*sum(case when coalesce(shot_at_local,shot_at) is not null then 1 else 0 end)/count(*)) date_pct,
+      round(100.0*sum(case when dated_by in ('filename','file') then 1 else 0 end)/count(*)) guessed_pct,
       round(100.0*sum(case when camera is not null then 1 else 0 end)/count(*)) cam_pct,
       round(100.0*sum(case when gps is not null then 1 else 0 end)/count(*)) gps_pct
     from asset`).get();
-  // Two kinds of dematerialised: placeholders never read (no asset), and indexed files whose
-  // originals Photos has since moved to iCloud. Only the first are outside the count above.
-  const states = db.prepare(`select case when state = 'dematerialised' and asset_id is not null
-                                         then 'icloud' else state end state, count(*) n
-                             from location group by 1`).all();
+  // What is not simply a file on disk that has been read:
+  //   listed       found by the first pass, not yet read; the scan is reading it
+  //   photos_only  in the Photos library, only ever in iCloud, known from Photos' record
+  //   placeholder  an online-only iCloud Drive or Dropbox file, never opened
+  //   online       read once, since moved online to free space (by Photos, iCloud or Dropbox)
+  const states = db.prepare(`select case
+        when l.state = 'dematerialised' then case
+          when a.id is null then 'unlisted'
+          when a.content_key like 'photos:%' then 'photos_only'
+          when a.provisional = 1 then 'placeholder' else 'online' end
+        when l.state = 'present' and a.provisional = 1 then 'listed'
+        else l.state end state, count(*) n
+      from location l left join asset a on a.id = l.asset_id group by 1`).all();
   const untagged = db.prepare(`select count(*) n from asset a
       where not exists (select 1 from annotation n2 where n2.asset_id=a.id and n2.key='project')`).get().n;
   const humanTags = db.prepare("select count(*) n from annotation where source='human'").get().n;
@@ -79,23 +89,30 @@ function describeArchive(db) {
   if (cams.length) L.push(`Cameras   ${cams.map(c => `${c.camera} (${c.n})`).join(' · ')}`);
   if (vols.length) L.push(`Drives    ${vols.map(v => `${v.label} (${v.n.toLocaleString()} files, last seen ${day(v.last_seen_at)})`).join(' · ')}`);
   L.push(`Where     ${roots.map(r => `${tilde(r.root)} ${r.n.toLocaleString()}`).join(' · ')}`);
-  L.push(`Coverage  date ${cov.date_pct}% · camera ${cov.cam_pct}% · GPS ${cov.gps_pct}%`);
-  const missing = states.find(s => s.state === 'missing')?.n || 0;
-  const ph = states.find(s => s.state === 'dematerialised')?.n || 0;
-  const icloud = states.find(s => s.state === 'icloud')?.n || 0;
-  if (icloud) L.push(`iCloud    ${icloud.toLocaleString()} indexed file${icloud === 1 ? ' has its' : 's have their'} ` +
-    `original in iCloud, moved there by Photos to save space. Everything known about ` +
-    `${icloud === 1 ? 'it' : 'them'} is kept, and Photos downloads ${icloud === 1 ? 'it' : 'them'} when opened`);
-  if (missing) L.push(`Missing   ${missing.toLocaleString()} files are indexed but no longer on disk. I still know what they were and where they lived`);
-  if (ph) L.push(`Cloud     Separately, ${ph.toLocaleString()} MORE files exist only as iCloud/Dropbox placeholders and ` +
-                 `are NOT part of the ${a.files.toLocaleString()} above. They were deliberately never opened, ` +
-                 `because reading one downloads it. Everything counted above was read from a real local file`);
+  L.push(`Coverage  date ${cov.date_pct}%` +
+    (cov.guessed_pct ? ` (${cov.guessed_pct}% only from a filename or the file's own timestamp)` : '') +
+    ` · camera ${cov.cam_pct}% · GPS ${cov.gps_pct}%`);
+  const n = k => states.find(s => s.state === k)?.n || 0;
+  const plural = (k, one, many) => k === 1 ? one : many;
+  if (n('listed')) L.push(`Reading   ${n('listed').toLocaleString()} files are listed by name, folder and date ` +
+    `and are still being read for camera, place and length. Search already finds them`);
+  if (n('photos_only')) L.push(`Photos    ${n('photos_only').toLocaleString()} ${plural(n('photos_only'), 'photo or video', 'photos and videos')} ` +
+    `in your Photos library ${plural(n('photos_only'), 'is', 'are')} only in iCloud and ${plural(n('photos_only'), 'has', 'have')} never been on this Mac. ` +
+    `They are indexed from Photos' own record: date, place, camera and original name, and Photos ` +
+    `downloads one when it is opened. They can be described once a photo from the same shoot is on disk`);
+  if (n('online')) L.push(`iCloud    ${n('online').toLocaleString()} indexed ${plural(n('online'), 'file has its', 'files have their')} ` +
+    `original in iCloud or Dropbox now, moved there to save space on this Mac. Everything known about ` +
+    `${plural(n('online'), 'it', 'them')} is kept, and opening ${plural(n('online'), 'it', 'one')} downloads it`);
+  if (n('missing')) L.push(`Missing   ${n('missing').toLocaleString()} files are indexed but no longer on disk. I still know what they were and where they lived`);
+  if (n('placeholder')) L.push(`Cloud     ${n('placeholder').toLocaleString()} online-only iCloud Drive and Dropbox files are counted ` +
+    `above and found by name, folder and date. They were never opened, because reading one downloads it`);
+  if (n('unlisted')) L.push(`Cloud     ${n('unlisted').toLocaleString()} more online-only files are not listed yet. The next scan lists them`);
   for (const [root, lim] of Object.entries(require('./storage.js').scanLimits(db))) {
     if (lim.capped) L.push(`Incomplete  The scan of ${tilde(root)} stopped at its limit of ` +
       `${lim.cap.toLocaleString()} files, so some media there is not indexed yet. Nothing past ` +
       `that point has been marked missing`);
     if (lim.too_deep) L.push(`Incomplete  ${lim.too_deep.toLocaleString()} folder${lim.too_deep === 1 ? '' : 's'} ` +
-      `in ${tilde(root)} sit more than 8 levels deep and were not searched`);
+      `in ${tilde(root)} sit more than ${lim.depth || 8} levels deep and were not searched`);
   }
   const pg = captionProgress(db);
   const undone = pg.shoots_left;
@@ -218,19 +235,24 @@ function search(db, query, opts = {}) {
       (hint.length ? `\n\nThings that do exist here: ${hint.join(' · ')}` : ''), data: [] };
   }
 
+  const original = db.prepare("select value from annotation where asset_id = ? and key = 'original_name' limit 1");
   const out = rows.map((r, i) => {
     const { best, live, all } = locationsFor(db, r.id);
-    const bits = [day(r.shot_at_local || r.shot_at), fmtDur(r.duration_s),
+    // A file's timestamp may only say when it was copied, so it is never passed off as a shoot date.
+    const when = day(r.shot_at_local || r.shot_at);
+    const bits = [when && (r.dated_by === 'file' ? `${when} (file date)` : when), fmtDur(r.duration_s),
                   r.width ? `${r.width}×${r.height}` : null, r.camera, fmtSize(r.size)].filter(Boolean);
     const state = best?.state === 'present' ? '' :
                   best?.state === 'missing' ? '  ⚠ not on disk any more' :
                   best?.state === 'offline' ? '  ⏏ on a drive that is not plugged in' :
-                  best?.state === 'dematerialised' ? '  ☁ in the cloud, not downloaded' : '';
+                  best?.state === 'dematerialised' ? '  ☁ online only, not downloaded' : '';
     const extra = all.length > live && live > 0 ? `  (+${all.length - live} old path${all.length - live > 1 ? 's' : ''})` : '';
     // The id has to be IN THE TEXT. Every other tool — show_pictures, reveal, get_asset —
     // is keyed by id, and the text is all the agent actually receives. Without it, search
     // is a dead end: it can describe a hit but nothing can act on it.
-    return `${i + 1}. [id ${r.id}] ${best?.filename || '(unknown)'}, ${bits.join(' · ')}${state}\n` +
+    // Photos names its originals by UUID; the name the camera gave is the one people know.
+    const name = original.get(r.id)?.value || best?.filename || '(unknown)';
+    return `${i + 1}. [id ${r.id}] ${name}, ${bits.join(' · ')}${state}\n` +
            `   ${tilde(fullPath(best))}${extra}`;
   });
 
@@ -279,11 +301,13 @@ function reveal(db, id, mode = 'open') {
   const { best } = locationsFor(db, id);
   if (!best) return { text: `No asset ${id}.` };
   const p = fullPath(best);
-  if (best.state === 'dematerialised')
-    return { text: `Its original is in iCloud, where Photos moved it to save space on this Mac. ` +
-      `Open it in Photos and Photos downloads it. Yellide never downloads anything itself.`,
+  // In a Photos library the file is not there to show; Photos is the way to it. An online-only
+  // Dropbox or iCloud Drive file is, and showing it in Finder does not download it.
+  if (best.state === 'dematerialised' && inPhotosLibrary(best))
+    return { text: `It is in your Photos library, with its original in iCloud. Open it in Photos ` +
+      `and Photos downloads it. Yellide never downloads anything itself.`,
       path: p, state: best.state };
-  if (best.state !== 'present') {
+  if (best.state !== 'present' && best.state !== 'dematerialised') {
     const vol = db.prepare('select v.label from location l join volume v on v.id=l.volume_id where l.id=?').get(best.id);
     return { text: `Not available right now. It was last seen at ${tilde(p)}` +
       // No marker (the user can decline it) means no volume row; the root's name is the drive's.
@@ -291,12 +315,13 @@ function reveal(db, id, mode = 'open') {
       `. ${best.state === 'missing' ? 'The file is no longer there.' : 'That drive is not mounted.'}`,
       path: p, state: best.state };
   }
-  if (mode === 'copy') return { text: `Path copied:\n${p}`, path: p };
+  const online = best.state === 'dematerialised' ? '\nIt is online only, so opening it downloads it.' : '';
+  if (mode === 'copy') return { text: `Path copied:\n${p}${online}`, path: p };
   const cmd = process.platform === 'darwin' ? ['open', ['-R', p]]
             : process.platform === 'win32'  ? ['explorer', ['/select,' + p]]
             : ['xdg-open', [path.dirname(p)]];
   try { execFile(cmd[0], cmd[1], () => {}); } catch {}
-  return { text: `Opened in ${process.platform === 'darwin' ? 'Finder' : 'the file manager'}:\n${p}`, path: p };
+  return { text: `Opened in ${process.platform === 'darwin' ? 'Finder' : 'the file manager'}:\n${p}${online}`, path: p };
 }
 
 // ---------------------------------------------------------------- export
@@ -338,13 +363,13 @@ module.exports = { describeArchive, search, getAsset, reveal, exportIndex, locat
 // Peers = same shoot. Dated files share a day+camera; undated ones share a folder.
 // Never both, and never the null-metadata bucket, which is not a shoot at all.
 function shootPeers(db, id) {
-  const me = db.prepare(`select a.id, a.camera, a.shot_at_local, a.shot_at, l.root, l.rel_path
+  const me = db.prepare(`select a.id, a.camera, a.shot_at_local, a.shot_at, a.dated_by, l.root, l.rel_path
                          from asset a join location l on l.asset_id=a.id and l.state='present'
                          where a.id = ? limit 1`).get(id);
   if (!me) return [];
   const k = shootKey(me);
   if (k.startsWith('x:')) return [];
-  const rows = db.prepare(`select a.id, a.camera, a.shot_at_local, a.shot_at, l.root, l.rel_path
+  const rows = db.prepare(`select a.id, a.camera, a.shot_at_local, a.shot_at, a.dated_by, l.root, l.rel_path
                            from asset a join location l on l.asset_id=a.id
                                                       and l.state in ('present', 'dematerialised')
                            where a.kind in ('image','video') and a.id != ?`).all(id);
@@ -428,15 +453,17 @@ const vision = require('./vision.js');
 // Grouping undated files by (null day, null camera) put 3,194 unrelated files — 36% of a
 // real archive — into ONE cluster. Propagating into that would have described thousands of
 // files wrongly, which is worse than not describing them at all.
+// A date taken from a filename or a file's timestamp says when it was saved or copied, not
+// shot: a folder of chat images all saved one day is not one shoot. Those group by folder.
 function shootKey(row) {
-  const t = row.shot_at_local || row.shot_at;
+  const t = !row.dated_by || row.dated_by === 'photos' ? row.shot_at_local || row.shot_at : null;
   if (t) return 'd:' + String(t).slice(0, 10) + '|' + (row.camera || '');
   const i = row.rel_path.lastIndexOf('/');
   return i > 0 ? 'f:' + row.root + '/' + row.rel_path.slice(0, i) : 'x:' + row.id;  // loose file = its own shoot
 }
 
 function allShoots(db, kind) {
-  const rows = db.prepare(`select a.id, a.kind, a.camera, a.shot_at_local, a.shot_at,
+  const rows = db.prepare(`select a.id, a.kind, a.camera, a.shot_at_local, a.shot_at, a.dated_by, a.provisional,
                                   a.width, a.height, l.filename, l.root, l.rel_path, l.state,
                                   exists(select 1 from annotation n where n.asset_id=a.id and n.key='caption') done
                            from asset a join location l on l.asset_id = a.id
@@ -451,7 +478,9 @@ function allShoots(db, kind) {
     const k = shootKey(r);
     let g = map.get(k);
     if (!g) map.set(k, g = { key: k, rep: null, size: 0, done: 0, is_shot: 0 });
-    if (!g.rep && r.state === 'present') g.rep = r;
+    // Nor can a file not yet read: copies of one ID card are separate assets until then, so
+    // marking one private would not reach the others.
+    if (!g.rep && r.state === 'present' && !r.provisional) g.rep = r;
     g.size++; if (r.done) g.done++;
     if (r.camera) g.is_shot = 1;
   }
@@ -628,7 +657,10 @@ function diagnosticsReport(db, runtime) {
         q("select count(*) n from asset where kind='" + k + "'")).join(' / '));
   add('locations', q('select count(*) n from location').toLocaleString());
   add('  missing', q("select count(*) n from location where state='missing'"));
-  add('  cloud placeholders', q("select count(*) n from location where state='dematerialised'"));
+  add('  online only', q("select count(*) n from location where state='dematerialised'"));
+  add('    of them in Photos', q("select count(*) n from asset where content_key like 'photos:%'"));
+  add('  not read yet', q(`select count(*) n from asset a join location l on l.asset_id = a.id
+                            where a.provisional = 1 and l.state = 'present'`));
   add('annotations', q('select count(*) n from annotation').toLocaleString());
   add('  captions', q("select count(*) n from annotation where key='caption'"));
   add('  private items', q("select count(*) n from annotation where key='private'"));

@@ -149,7 +149,7 @@ const fresh = name => {
       db.prepare(`delete from ${t}`).run();
       db.prepare(`insert into ${t}(rowid, body, asset_id) values(900, 'old row', 7)`).run();
     }
-    db.prepare('delete from schema_version where v >= 4').run();
+    db.prepare('delete from schema_version where v = 4').run();
     db.close();
     const again = storage.open(path.join(tmp, 'migrate.db'));
     for (const t of ['search', 'search_en'])
@@ -168,7 +168,7 @@ const fresh = name => {
     tools.writeAnnotations(db, [{ id, caption: 'mandap at dusk' }]);
     db.prepare('delete from search_en').run();
     db.prepare("update search set body = 'IMG_9.jpg' where rowid = ?").run(id);
-    db.prepare('delete from schema_version where v >= 4').run();
+    db.prepare('delete from schema_version where v = 4').run();
     db.close();
     const again = storage.open(dbPath);
     for (const [t, word] of [['search', 'mandap'], ['search_en', 'garland']])

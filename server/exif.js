@@ -8,7 +8,9 @@
 const fs = require('fs');
 
 const IMAGE = new Set(['.jpg','.jpeg','.jpe','.png','.heic','.heif','.tif','.tiff','.webp','.gif','.bmp',
-                       '.dng','.nef','.arw','.cr2','.cr3','.orf','.raf','.rw2','.pef','.srw']);
+                       '.avif','.jxl',
+                       '.dng','.nef','.nrw','.arw','.srf','.sr2','.cr2','.cr3','.crw','.orf','.raf','.rw2',
+                       '.rwl','.pef','.srw','.erf','.kdc','.mrw','.x3f','.3fr','.iiq']);
 // Deliberately empty. Yellide indexes what you SHOT — images, video, audio — not what you
 // wrote. PDFs and design documents swept up invoices, papers and repo documentation:
 // 1,794 "design" files in one code repo alone, which is noise, not an archive.
@@ -148,6 +150,14 @@ function isDataless(st) {
 }
 module.exports_blocksMeaningful = BLOCKS_MEANINGFUL;
 
+// "Canon" + "Canon EOS 600D" -> "Canon EOS 600D"; "Apple" + "iPhone 8" -> "Apple iPhone 8".
+function cameraName(make, model) {
+  if (!make && !model) return null;
+  const norm = s => String(s).replace(/\0/g, '').replace(/\s+corporation|\s+imaging|\s+inc\.?/ig, '').trim();
+  return (model && make && norm(model).toLowerCase().includes(norm(make).toLowerCase()))
+    ? norm(model) : [make && norm(make), model && norm(model)].filter(Boolean).join(' ') || null;
+}
+
 function extractImage(file, windowBytes = 512 * 1024) {
   const st = fs.statSync(file);
   if (isDataless(st))
@@ -177,12 +187,7 @@ function extractImage(file, windowBytes = 512 * 1024) {
     const want0 = new Set([TAG.MAKE, TAG.MODEL, TAG.DATETIME, TAG.EXIF_IFD, TAG.GPS_IFD]);
     const ifd0 = walkIfd(rd, ifd0Off, want0);
 
-    const make = ifd0[TAG.MAKE], model = ifd0[TAG.MODEL];
-    if (make || model) {
-      const norm = s => String(s).replace(/\s+corporation|\s+imaging|\s+inc\.?/ig, '').trim();
-      r.camera = (model && make && norm(model).toLowerCase().includes(norm(make).toLowerCase()))
-        ? norm(model) : [make && norm(make), model && norm(model)].filter(Boolean).join(' ');
-    }
+    r.camera = cameraName(ifd0[TAG.MAKE], ifd0[TAG.MODEL]);
     if (ifd0[TAG.DATETIME]) r.shot_at_local = ifd0[TAG.DATETIME];
 
     if (ifd0[TAG.EXIF_IFD]) {
@@ -226,4 +231,4 @@ function extractDesign(file) {
            shot_at: null, shot_at_local: null, camera: null, gps: null, meta_bytes: 0 };
 }
 
-module.exports = { IMAGE, DESIGN, extractImage, extractDesign, findTiff, rawDimensions, isDataless, BLOCKS_MEANINGFUL };
+module.exports = { IMAGE, DESIGN, cameraName, extractImage, extractDesign, findTiff, rawDimensions, isDataless, BLOCKS_MEANINGFUL };

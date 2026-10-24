@@ -17,9 +17,22 @@ const SKIP_TOP = /^(Library|Applications|Public|\.Trash|Music|node_modules|go|De
 const CLOUD_SUBPATHS = ['Library/Mobile Documents/com~apple~CloudDocs', 'OneDrive',
                         'OneDrive - Personal', 'Nextcloud', 'ownCloud'];
 
+// macOS keeps Dropbox, Google Drive, OneDrive and Box here now, one folder each, under a
+// Library that is otherwise skipped whole.
+const CLOUD_STORAGE = 'Library/CloudStorage';
+
 function candidateRoots() {
-  const home = os.homedir(), roots = [];
-  const add = (label, p) => { try { if (fs.statSync(p).isDirectory()) roots.push({ label, path: p }); } catch {} };
+  const home = os.homedir(), roots = [], real = new Set();
+  // ~/Dropbox is often a link to its folder under CloudStorage. Walking both indexed every
+  // file twice, so a folder counts once, by where it really is, under its first name.
+  const add = (label, p) => {
+    try {
+      if (!fs.statSync(p).isDirectory()) return;
+      const r = fs.realpathSync(p);
+      if (real.has(r)) return;
+      real.add(r); roots.push({ label, path: p });
+    } catch {}
+  };
   try {
     for (const n of fs.readdirSync(home)) {
       if (n.startsWith('.') || SKIP_TOP.test(n)) continue;
@@ -33,6 +46,10 @@ function candidateRoots() {
     add('volume', vp);
   }
   for (const c of CLOUD_SUBPATHS) add('cloud', path.join(home, c));
+  try {
+    for (const n of fs.readdirSync(path.join(home, CLOUD_STORAGE)))
+      if (!n.startsWith('.')) add('cloud', path.join(home, CLOUD_STORAGE, n));
+  } catch {}
   return roots;
 }
 
