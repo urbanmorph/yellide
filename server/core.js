@@ -312,13 +312,16 @@ function walkRoot(db, root, opts) {
   const walk = {};
   const files = walkTree(root, [], 0, opts.cap || SCAN_CAP, SCAN_DEPTH, walk);
   const marker = opts.writeMarker === false ? { id: null }
-                 : storage.volumeMarker(root, { consent: opts.consent });
+                 : storage.volumeMarker(root, { consent: opts.consent, treatAsVolume: opts.treatAsVolume });
   let volumeId = null;
   if (marker.id) {
     db.prepare(`insert into volume(marker_id,label,first_seen_at,last_seen_at) values(?,?,?,?)
                 on conflict(marker_id) do update set last_seen_at = excluded.last_seen_at`)
       .run(marker.id, path.basename(root), now, now);
     volumeId = db.prepare('select id from volume where marker_id = ?').get(marker.id).id;
+    db.exec('begin immediate');
+    try { storage.claimRoot(db, volumeId, toPortable(root)); db.exec('commit'); }
+    catch (e) { db.exec('rollback'); throw e; }
   }
   return { root, portableRoot: toPortable(root), files, walk, volumeId, now, cap: opts.cap || SCAN_CAP };
 }
@@ -340,6 +343,7 @@ function stmts(db) {
     insLoc: db.prepare(`insert into location(asset_id,volume_id,root,rel_path,filename,state,size,mtime,first_seen_at,last_seen_at)
         values(?,?,?,?,?,?,?,?,?,?)
         on conflict(root,rel_path) do update set asset_id=excluded.asset_id, state=excluded.state,
+          volume_id=coalesce(excluded.volume_id, location.volume_id),
           size=excluded.size, mtime=excluded.mtime, last_seen_at=excluded.last_seen_at`),
     delAnn: db.prepare("delete from annotation where asset_id = ? and source in ('folder','filename')"),
     insAnn: db.prepare('insert into annotation(asset_id,key,value,source,created_at) values(?,?,?,?,?)'),

@@ -10,6 +10,25 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.33] 2026-10-24
+
+### Fixed
+
+- **A renamed drive was not recognised, though the settings and the privacy page said it
+  was.** Yellide wrote its marker to each drive and never read it back. A renamed drive was
+  indexed a second time under its new name, its old entries left behind as "not plugged in".
+  Now the marker claims the drive's entries under whatever name it has.
+- **Two memory cards with the same name overwrote each other.** Every Canon card is called
+  `EOS_DIGITAL` and numbers its photos from `IMG_0001`. Scanning a second card marked every
+  photo on the first as gone and replaced them file by file. Now each card keeps its own
+  entries, and the one not plugged in is reported as not plugged in.
+
+### Changed
+
+- **The install page explains ChatGPT and Codex**: the desktop app's MCP servers screen,
+  `~/.codex/config.toml`, that chatgpt.com in a browser cannot run a local server, and how to
+  update. Marked as not yet tested by us.
+
 ## [0.9.32] 2026-10-24
 
 ### Fixed

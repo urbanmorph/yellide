@@ -213,6 +213,27 @@ function adopt(db, fromId, toId) {
   reindex(db, toId);
 }
 
+// A drive is its marker, not its name. Entries are stored under the path the drive is mounted
+// at, so when a marker turns up at a path:
+//   - another drive's entries already there (two cards both called EOS_DIGITAL) are parked
+//     under that path plus "#" and their marker, a path that never exists, so they read as
+//     not plugged in rather than gone, and are never overwritten by the second card's files;
+//   - this drive's entries under any other path (it was renamed, or was parked) come here.
+const PARK = /#[0-9a-f]{8}$/;
+const unpark = root => String(root || '').replace(PARK, '');
+function claimRoot(db, volumeId, root) {
+  const others = db.prepare(`select distinct l.volume_id id, v.marker_id m from location l
+                             join volume v on v.id = l.volume_id where l.root = ? and l.volume_id != ?`).all(root, volumeId);
+  const park = db.prepare('update location set root = ? where root = ? and volume_id = ?');
+  for (const o of others) park.run(`${root}#${String(o.m).replace(/-/g, '').slice(0, 8).toLowerCase()}`, root, o.id);
+  // Entries made here before the drive was marked give way to the marked ones they duplicate.
+  db.prepare(`delete from location where root = ? and volume_id is null and rel_path in
+              (select rel_path from location where volume_id = ? and root != ?)`).run(root, volumeId, root);
+  db.prepare('update or ignore location set root = ? where volume_id = ? and root != ?').run(root, volumeId, root);
+  db.prepare('delete from location where volume_id = ? and root != ?').run(volumeId, root);
+  db.prepare('update volume set label = ? where id = ?').run(path.basename(root), volumeId);
+}
+
 // Which roots the last scan could not walk completely: { root: {cap, found, capped, too_deep, at} }.
 // A root that scans completely is removed, so the warning lasts only while it is true.
 const scanLimits = db => {
@@ -253,8 +274,8 @@ function isMountPoint(p) {
 }
 
 function volumeMarker(root, opts = {}) {
-  // Only ever mark an actual volume, and only with permission.
-  if (!isMountPoint(root)) return { id: null, skipped: 'not-a-volume' };
+  // Only ever mark an actual volume, and only with permission. Tests stand a folder in for one.
+  if (!opts.treatAsVolume && !isMountPoint(root)) return { id: null, skipped: 'not-a-volume' };
   if (opts.consent === false) return { id: null, skipped: 'declined' };
   const dir = path.join(root, '.yellide');
   const file = path.join(dir, 'volume-id');
@@ -273,4 +294,4 @@ function volumeMarker(root, opts = {}) {
 }
 
 module.exports = { dataDir, catalogPath, open, version, MIGRATIONS, installId, resetInstallId, volumeMarker, isMountPoint,
-                   scanLimits, noteScanLimits, reindex, adopt, dateRank, rankOf };
+                   scanLimits, noteScanLimits, reindex, adopt, dateRank, rankOf, claimRoot, unpark };

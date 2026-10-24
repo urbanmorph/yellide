@@ -36,7 +36,9 @@ function locationsFor(db, assetId) {
   return { best: (live[0] || rows[0]) || null, all: rows, live: live.length };
 }
 const inPhotosLibrary = loc => /\.photoslibrary\//i.test((loc.root || '') + '/' + loc.rel_path);
-const fullPath = loc => loc ? path.join(loc.root, loc.rel_path.split('/').join(path.sep)) : null;
+// A parked drive's entries carry "#marker" on their root; it is a key, never a place to show.
+const { unpark } = require('./storage.js');
+const fullPath = loc => loc ? path.join(unpark(loc.root), loc.rel_path.split('/').join(path.sep)) : null;
 
 // ---------------------------------------------------------------- describe_archive
 function describeArchive(db) {
@@ -56,7 +58,9 @@ function describeArchive(db) {
   const vols  = db.prepare(`select v.label, v.last_seen_at, count(l.id) n
                             from volume v join location l on l.volume_id = v.id
                             group by v.id having n > 0 order by n desc`).all();
+  // Where things are now: a parked drive (see storage.claimRoot) is not plugged in.
   const roots = db.prepare(`select root, count(*) n from location where state='present'
+                            and root not glob '*#[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]'
                             group by root order by n desc limit 8`).all();
   const cov = db.prepare(`select
       round(100.0*sum(case when coalesce(shot_at_local,shot_at) is not null then 1 else 0 end)/count(*)) date_pct,
@@ -311,7 +315,7 @@ function reveal(db, id, mode = 'open') {
     const vol = db.prepare('select v.label from location l join volume v on v.id=l.volume_id where l.id=?').get(best.id);
     return { text: `Not available right now. It was last seen at ${tilde(p)}` +
       // No marker (the user can decline it) means no volume row; the root's name is the drive's.
-      ` on the drive "${vol?.label || path.basename(best.root)}"` +
+      ` on the drive "${vol?.label || path.basename(unpark(best.root))}"` +
       `. ${best.state === 'missing' ? 'The file is no longer there.' : 'That drive is not mounted.'}`,
       path: p, state: best.state };
   }

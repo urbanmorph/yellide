@@ -27,7 +27,7 @@ It has no account, never modifies your files, and sends nothing about you: the o
 "Where is that clip?"                          → on KERALA_2023, and that drive is unplugged
 ```
 
-**Status:** working, v0.9.32. Built against a real ~21,000-file archive. Not yet 1.0 because
+**Status:** working, v0.9.33. Built against a real ~21,000-file archive. Not yet 1.0 because
 audio is indexed but not yet transcribed, describing pictures needs macOS, Windows and Linux
 are untested, and the export viewer is unbuilt.
 
@@ -109,6 +109,10 @@ bundle, quit Claude Desktop with Cmd-Q, reopen.
   date, as a provisional asset, so the whole archive is searchable in seconds. The second
   reads each file and folds what was known into its content-keyed asset. Online-only files
   and photos that exist only in iCloud stay provisional, findable and never downloaded.
+- **A drive is its marker, not its name.** Entries are stored under the path a drive is
+  mounted at, and `storage.claimRoot` moves them when its marker turns up elsewhere: a
+  renamed drive keeps its entries, and a second card called `EOS_DIGITAL` parks the first
+  card's entries instead of overwriting them.
 - **Privacy propagates by content key, not by path.** The same ID card in six folders is
   marked once.
 - **Captions propagate across a shoot**, which is what makes describing an archive
