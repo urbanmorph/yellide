@@ -46,8 +46,8 @@ A website cannot read files on your computer, so it cannot help you find your fo
 <ol>
 
 <li>
-<b><a href="/yellide.mcpb" download="yellide-0.9.31.mcpb">Download Yellide</a></b>
-<div class="note">Version <b class="ver">0.9.31</b>, about <b class="kb">86</b> KB. Everything Yellide does happens on your machine.<br>It saves as <code>yellide-0.9.31.mcpb</code>, if an older number is sitting in your Downloads or on your Desktop, that is not this one.</div>
+<b><a href="/yellide.mcpb" download="yellide-0.9.32.mcpb">Download Yellide</a></b>
+<div class="note">Version <b class="ver">0.9.32</b>, about <b class="kb">86</b> KB. Everything Yellide does happens on your machine.<br>It saves as <code>yellide-0.9.32.mcpb</code>, if an older number is sitting in your Downloads or on your Desktop, that is not this one.</div>
 </li>
 
 <li>
@@ -132,7 +132,8 @@ contact sheet. This one cost us a whole release to notice.</p>
 
 <div class="log plain">
 <div class="row"><div class="k">Tool permissions</div><div class="v">Claude asks before every single tool call by default, and indexing an archive is hundreds of them. <b class="k">Settings &rarr; Extensions &rarr; Yellide &rarr; Configure</b>, then switch the group from <em>Needs approval</em> to <em>Always allow</em>. It is a real permission, and <a href="/privacy">everything it grants</a> is listed in full.</div></div>
-<div class="row"><div class="k">Never write anything to my drives</div><div class="v">Yellide writes one small file to each drive it indexes, so it still recognises the drive after you rename it. Same screen, if you would rather it wrote nothing at all. <a href="/privacy">Why it exists, and what you lose</a>.</div></div>
+<div class="row"><div class="k">Never write anything to my drives</div><div class="v">Leave this off if you want Yellide to recognise your drives. It is off unless you turn it on. Yellide puts one small file on each external drive it indexes, so it knows the drive again even after you rename it. Turn this on only if nothing at all may be written to your drives. <a href="/privacy">What the file holds, and what you lose</a>.</div></div>
+<div class="row"><div class="k">Look only in these folders</div><div class="v">Leave this empty. Yellide finds your photos and videos by itself. Add folders only if you want it to look in them and nowhere else.</div></div>
 </div>
 
 <h2>Already have it? Upgrading</h2>
@@ -141,7 +142,7 @@ contact sheet. This one cost us a whole release to notice.</p>
 
 <ol>
 <li><b>Download the new file and drag it on as before.</b>
-<div class="note">The filename carries the version, <code>yellide-0.9.31.mcpb</code>.
+<div class="note">The filename carries the version, <code>yellide-0.9.32.mcpb</code>.
 If the number is lower than the one on this page, it is a stale download.</div></li>
 
 <li><b>The button now says <em>Update</em>, not <em>Install Anyway</em>.</b>
@@ -193,7 +194,7 @@ counts and capabilities, so it is safe to paste anywhere.</p>
 <pre>YELLIDE DIAGNOSTIC REPORT
 Contains no filenames, paths, captions or search terms. Safe to share.
 
-version               0.9.31
+version               0.9.32
 platform              darwin arm64
 can view pictures     yes, sips (built into macOS)
 assets indexed        8,910
@@ -213,12 +214,20 @@ client that speaks MCP can use it. Point it at:</p>
 <pre>command: node
 args:    /path/to/yellide/server/index.js</pre>
 
+<p>These apps do not show Claude Desktop&rsquo;s settings screen. The same two settings go in the
+server&rsquo;s configuration instead:</p>
+
+<pre># optional: look only in these folders
+args:    /path/to/yellide/server/index.js  /Users/you/Pictures
+# optional: write nothing to your drives
+env:     YELLIDE_NO_DRIVE_MARKER=1</pre>
+
 
 
 <p>What you get depends on one thing: <b class="k">whether your AI can see pictures.</b></p>
 
 <div class="log plain">
-<div class="row"><div class="k">Works with any MCP client</div><div class="v">Filenames, folders, project names, dates, cameras, lenses, places, durations, and drives that are not plugged in. All all <b class="tools">17</b> tools.</div></div>
+<div class="row"><div class="k">Works with any MCP client</div><div class="v">Filenames, folders, project names, dates, cameras, lenses, places, durations, and drives that are not plugged in. All <b class="tools">17</b> tools.</div></div>
 <div class="row"><div class="k">Needs an AI that can see</div><div class="v">Searching by <em>what is in the picture</em>. Yellide hands the actual images back and your AI writes down what it sees. A text-only model receives pictures it cannot look at, so nothing gets described.</div></div>
 </div>
 
@@ -239,7 +248,7 @@ once you know what working looks like.</p>
 </main>
 
 <hr>
-<p class="foot">Free &middot; MIT &middot; v<b class="ver">0.9.31</b> &middot; <a href="https://github.com/urbanmorph/yellide/blob/main/CHANGELOG.md">what changed</a></p>
+<p class="foot">Free &middot; MIT &middot; v<b class="ver">0.9.32</b> &middot; <a href="https://github.com/urbanmorph/yellide/blob/main/CHANGELOG.md">what changed</a></p>
 
 
 </div>

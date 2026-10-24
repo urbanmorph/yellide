@@ -3,7 +3,7 @@
 // Read-only against your footage. The index goes to a temp file. Nothing is uploaded.
 //
 // stdout is the MCP protocol. Nothing may ever be written to it except JSON-RPC.
-const os = require('os'), path = require('path');
+const os = require('os'), path = require('path'), fs = require('fs');
 const { Worker } = require('worker_threads');
 const log = (...a) => process.stderr.write('[yellide] ' + a.join(' ') + '\n');
 
@@ -83,6 +83,15 @@ function startScan(roots, cap) {
 
 const LISTING_WAIT_MS = 20000;
 
+// "Limit Yellide to specific folders" arrives as arguments: an array setting expands into
+// argv, never into an environment variable. An unset one can arrive as the literal template.
+// Nothing chosen means everything Yellide can find.
+function scanRoots() {
+  const chosen = process.argv.slice(2).map(s => String(s).trim())
+    .filter(s => s && !/^\$\{.*\}$/.test(s) && fs.existsSync(s));
+  return chosen.length ? chosen : discover.discoverFast().locations.map(l => l.path);
+}
+
 // "index everything" and "what still needs a caption" were chores dressed up as commands.
 // The tool knows the index is empty; making the user say so is asking them to do its job.
 // So: the first question of any kind starts the scan, and rescans happen on their own —
@@ -98,7 +107,7 @@ function maybeAutoScan() {
     const age = last ? Date.now() - Date.parse(last) : Infinity;
 
     if (assets === 0 || age > T.AUTO_RESCAN_MS) {
-      const roots = discover.discoverFast().locations.map(l => l.path);
+      const roots = scanRoots();
       if (!roots.length) return null;
       const job = startScan(roots);
       stampScan(d);
@@ -159,7 +168,7 @@ function probeScan(dir, limit) {
   if (!core) return { error: 'core module failed to load', detail: coreErr };
   // No path given? Find everything and index all of it. Asking "which folder?" makes the
   // user answer the question the tool exists to answer.
-  const roots = dir ? [dir] : discover.discoverFast().locations.map(l => l.path);
+  const roots = dir ? [dir] : scanRoots();
   if (!roots.length) return { error: 'No media found anywhere.' };
   const { jobId } = startScan(roots, limit);
   return {

@@ -424,6 +424,27 @@ function photosLibrary(root, rows) {
     assert.ok(/^1 files/m.test(text), text);
   });
 
+  await check('folders chosen in the settings are the only ones scanned', async () => {
+    // "Limit Yellide to specific folders" was passed to the server and never read, so the
+    // whole machine was scanned whatever anyone chose.
+    const home = path.join(tmp, 'chosen');
+    put(path.join(home, 'Pictures'), 'Goa/beach.jpg');
+    put(path.join(home, 'Movies'), 'Hampi/temple.mp4');
+    const rpc = [
+      { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18',
+        capabilities: {}, clientInfo: { name: 't', version: '0' } } },
+      { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'describe_archive', arguments: {} } },
+    ].map(m => JSON.stringify(m)).join('\n') + '\n';
+    spawnSync(process.execPath, [path.join(__dirname, '..', 'server', 'index.js'), path.join(home, 'Movies'),
+                                 '${user_config.restrict_to_folders}'], {
+      input: rpc, timeout: 30000, encoding: 'utf8',
+      env: { ...process.env, HOME: home, YELLIDE_HOME: path.join(home, 'data'),
+             YELLIDE_COUNTER: 'http://127.0.0.1:9', YELLIDE_NO_DRIVE_MARKER: '1' } });
+    const db = storage.open(path.join(home, 'data', 'catalog.db'));
+    const names = db.prepare('select filename from location').all().map(r => r.filename);
+    assert.deepStrictEqual(names, ['temple.mp4'], `scanned: ${names}`);
+  });
+
   await check('diagnostics says when the last scan was, and that an old index refreshes on asking', async () => {
     // After an upgrade the report showed the new version beside the old counts, with nothing
     // to say a fresh scan had not run yet and would start the moment anyone asked.

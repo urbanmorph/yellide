@@ -10,6 +10,22 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.32] 2026-10-24
+
+### Fixed
+
+- **"Limit Yellide to specific folders" did nothing.** The folders chosen in Claude Desktop's
+  settings reached Yellide and were never read, so it scanned everything it could find
+  regardless. It now looks in those folders and nowhere else. Leaving it empty still means
+  everything.
+
+### Changed
+
+- **The two settings are reworded** in plain, short sentences that start with what most
+  people should do: leave the folder list empty, and leave "Never write anything to my
+  drives" off. The install page explains both, and says that other apps such as ChatGPT and
+  Cursor, which have no settings screen, set them in the server's configuration.
+
 ## [0.9.31] 2026-10-24
 
 ### Fixed
