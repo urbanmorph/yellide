@@ -10,6 +10,23 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.28] 2026-10-24
+
+### Fixed
+
+- **Photos moved to iCloud were reported as lost.** With "Optimise Mac Storage" on, Photos
+  deletes local originals that are safe in iCloud, and the next scan called them "no longer
+  on disk". On the library this was built against that was 2,908 photographs. Yellide now
+  asks the Photos library, read-only, which originals it still holds: those are marked as in
+  iCloud, and only photos Photos no longer lists, or has in the trash, count as missing.
+  `reveal` says to open them in Photos, which downloads them. Yellide still never does.
+- **Their shoots' captions now reach them.** A photo in iCloud is still part of its shoot, so
+  a caption written for the shoot is copied to it and it counts in the coverage figure. Only
+  a file on disk is ever offered to be looked at.
+- **Album names now tag photos in iCloud** too, where Yellide already knows the file.
+
+The privacy page now says that Yellide reads the Photos library's own list, and what for.
+
 ## [0.9.27] 2026-10-24
 
 ### Fixed

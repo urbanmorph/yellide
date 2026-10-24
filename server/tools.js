@@ -62,7 +62,11 @@ function describeArchive(db) {
       round(100.0*sum(case when camera is not null then 1 else 0 end)/count(*)) cam_pct,
       round(100.0*sum(case when gps is not null then 1 else 0 end)/count(*)) gps_pct
     from asset`).get();
-  const states = db.prepare('select state, count(*) n from location group by state').all();
+  // Two kinds of dematerialised: placeholders never read (no asset), and indexed files whose
+  // originals Photos has since moved to iCloud. Only the first are outside the count above.
+  const states = db.prepare(`select case when state = 'dematerialised' and asset_id is not null
+                                         then 'icloud' else state end state, count(*) n
+                             from location group by 1`).all();
   const untagged = db.prepare(`select count(*) n from asset a
       where not exists (select 1 from annotation n2 where n2.asset_id=a.id and n2.key='project')`).get().n;
   const humanTags = db.prepare("select count(*) n from annotation where source='human'").get().n;
@@ -78,10 +82,14 @@ function describeArchive(db) {
   L.push(`Coverage  date ${cov.date_pct}% · camera ${cov.cam_pct}% · GPS ${cov.gps_pct}%`);
   const missing = states.find(s => s.state === 'missing')?.n || 0;
   const ph = states.find(s => s.state === 'dematerialised')?.n || 0;
+  const icloud = states.find(s => s.state === 'icloud')?.n || 0;
+  if (icloud) L.push(`iCloud    ${icloud.toLocaleString()} indexed file${icloud === 1 ? ' has its' : 's have their'} ` +
+    `original in iCloud, moved there by Photos to save space. Everything known about ` +
+    `${icloud === 1 ? 'it' : 'them'} is kept, and Photos downloads ${icloud === 1 ? 'it' : 'them'} when opened`);
   if (missing) L.push(`Missing   ${missing.toLocaleString()} files are indexed but no longer on disk. I still know what they were and where they lived`);
   if (ph) L.push(`Cloud     Separately, ${ph.toLocaleString()} MORE files exist only as iCloud/Dropbox placeholders and ` +
                  `are NOT part of the ${a.files.toLocaleString()} above. They were deliberately never opened, ` +
-                 `because reading one downloads it. Everything counted above is a real local file`);
+                 `because reading one downloads it. Everything counted above was read from a real local file`);
   for (const [root, lim] of Object.entries(require('./storage.js').scanLimits(db))) {
     if (lim.capped) L.push(`Incomplete  The scan of ${tilde(root)} stopped at its limit of ` +
       `${lim.cap.toLocaleString()} files, so some media there is not indexed yet. Nothing past ` +
@@ -271,6 +279,10 @@ function reveal(db, id, mode = 'open') {
   const { best } = locationsFor(db, id);
   if (!best) return { text: `No asset ${id}.` };
   const p = fullPath(best);
+  if (best.state === 'dematerialised')
+    return { text: `Its original is in iCloud, where Photos moved it to save space on this Mac. ` +
+      `Open it in Photos and Photos downloads it. Yellide never downloads anything itself.`,
+      path: p, state: best.state };
   if (best.state !== 'present') {
     const vol = db.prepare('select v.label from location l join volume v on v.id=l.volume_id where l.id=?').get(best.id);
     return { text: `Not available right now. It was last seen at ${tilde(p)}` +
@@ -333,7 +345,8 @@ function shootPeers(db, id) {
   const k = shootKey(me);
   if (k.startsWith('x:')) return [];
   const rows = db.prepare(`select a.id, a.camera, a.shot_at_local, a.shot_at, l.root, l.rel_path
-                           from asset a join location l on l.asset_id=a.id and l.state='present'
+                           from asset a join location l on l.asset_id=a.id
+                                                      and l.state in ('present', 'dematerialised')
                            where a.kind in ('image','video') and a.id != ?`).all(id);
   return rows.filter(r => shootKey(r) === k).map(r => ({ id: r.id }));
 }
@@ -424,20 +437,25 @@ function shootKey(row) {
 
 function allShoots(db, kind) {
   const rows = db.prepare(`select a.id, a.kind, a.camera, a.shot_at_local, a.shot_at,
-                                  a.width, a.height, l.filename, l.root, l.rel_path,
+                                  a.width, a.height, l.filename, l.root, l.rel_path, l.state,
                                   exists(select 1 from annotation n where n.asset_id=a.id and n.key='caption') done
-                           from asset a join location l on l.asset_id = a.id and l.state='present'
+                           from asset a join location l on l.asset_id = a.id
+                                                       and l.state in ('present', 'dematerialised')
                            where a.kind in ('image','video')` +
                           (kind ? ' and a.kind = ?' : '')).all(...(kind ? [kind] : []));
+  // Photos in iCloud belong to their shoot and take its caption, but only a file on disk can
+  // be looked at, so it alone can represent one. A shoot with nothing on disk and no caption
+  // cannot be worked, and is left out rather than promised.
   const map = new Map();
   for (const r of rows) {
     const k = shootKey(r);
     let g = map.get(k);
-    if (!g) map.set(k, g = { key: k, rep: r, size: 0, done: 0, is_shot: r.camera ? 1 : 0 });
+    if (!g) map.set(k, g = { key: k, rep: null, size: 0, done: 0, is_shot: 0 });
+    if (!g.rep && r.state === 'present') g.rep = r;
     g.size++; if (r.done) g.done++;
     if (r.camera) g.is_shot = 1;
   }
-  return [...map.values()];
+  return [...map.values()].filter(g => g.rep || g.done);
 }
 
 function getWork(db, opts = {}) {

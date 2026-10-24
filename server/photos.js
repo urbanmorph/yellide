@@ -80,14 +80,37 @@ function joinTable(p) {
   return null;
 }
 
-/** [{ filename, album }] for every descriptive album, read-only. */
-function readAlbums(photosDb) {
+function openPhotos(photosDb) {
   const { DatabaseSync } = require('node:sqlite');
-  let p;
   // `immutable` matters: Photos keeps a write-ahead log, and a plain read-only open of a
   // library the Photos app currently has running fails while trying to recover it.
-  try { p = new DatabaseSync(`file:${photosDb}?immutable=1`, { readOnly: true, allowExtension: false }); }
-  catch { p = new DatabaseSync(photosDb, { readOnly: true }); }
+  try { return new DatabaseSync(`file:${photosDb}?immutable=1`, { readOnly: true, allowExtension: false }); }
+  catch { return new DatabaseSync(photosDb, { readOnly: true }); }
+}
+
+/**
+ * The originals Photos keeps safe in iCloud, as "dir/file" under originals/. "Optimise Mac
+ * Storage" deletes those local copies, and without this they read as photographs that are
+ * gone. Listed, not trashed, held in iCloud: anything else stays missing. A schema without
+ * these columns gives an empty set, so nothing is ever called safe on a guess.
+ */
+function cloudOriginals(libraryDir) {
+  const photosDb = path.join(libraryDir, 'database', 'Photos.sqlite');
+  if (!fs.existsSync(photosDb)) return new Set();
+  let p;
+  try {
+    p = openPhotos(photosDb);
+    const cols = new Set(p.prepare("select name from pragma_table_info('ZASSET')").all().map(c => c.name));
+    if (!['ZDIRECTORY', 'ZFILENAME', 'ZTRASHEDSTATE', 'ZCLOUDLOCALSTATE'].every(c => cols.has(c))) return new Set();
+    return new Set(p.prepare(`select ZDIRECTORY || '/' || ZFILENAME k from ZASSET
+                              where ZTRASHEDSTATE = 0 and ZCLOUDLOCALSTATE = 1`).all().map(r => r.k));
+  } catch { return new Set(); }
+  finally { try { p?.close(); } catch {} }
+}
+
+/** [{ filename, album }] for every descriptive album, read-only. */
+function readAlbums(photosDb) {
+  const p = openPhotos(photosDb);
   try {
     const j = joinTable(p);
     if (!j) return [];
@@ -117,7 +140,8 @@ function importAlbums(db, opts = {}) {
       + 'from, so there is nothing in them worth adding.' };
   }
 
-  const find = db.prepare("select asset_id from location where filename = ? and state = 'present'");
+  const find = db.prepare(`select asset_id from location where filename = ? and asset_id is not null
+                           and state in ('present', 'dematerialised')`);
   const has = db.prepare('select 1 from annotation where asset_id = ? and key = ? and value = ?');
   const put = db.prepare(`insert into annotation(asset_id, key, value, source, created_at)
                           values(?,'tag',?,'photos-album',?)`);
@@ -134,7 +158,7 @@ function importAlbums(db, opts = {}) {
 
   // Writing the row is not enough: search reads a full-text table that reindex rebuilds, and
   // reindex is also what keeps anything marked private out of it.
-  const { reindex } = require('./tools.js');
+  const { reindex } = require('./storage.js');
   for (const id of touched) { try { reindex(db, id); } catch {} }
 
   const names = [...albums].sort().slice(0, 8).join(', ');
@@ -152,4 +176,4 @@ function importAlbums(db, opts = {}) {
   };
 }
 
-module.exports = { findLibrary, isDescriptive, readAlbums, importAlbums };
+module.exports = { findLibrary, isDescriptive, readAlbums, importAlbums, cloudOriginals };

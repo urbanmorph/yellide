@@ -5,6 +5,7 @@ const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const exif = require('./exif.js');
 const audio = require('./audio.js');
 const storage = require('./storage.js');
+const photos = require('./photos.js');
 
 // A "video index" would miss a terabyte of podcast recordings entirely. Media, not video.
 const VIDEO = new Set(['.mp4','.mov','.m4v','.mxf','.avi','.mkv','.mts','.m2ts','.braw','.r3d','.ari','.insv','.lrv','.webm']);
@@ -341,11 +342,28 @@ function scan(db, root, opts = {}) {
     r.missing = r.capped ? 0 : db.prepare(`update location set state = 'missing'
                             where root = ? and last_seen_at < ? and state != 'missing'`)
                   .run(portableRoot, now).changes;
+    if (!r.capped) { r.in_icloud = inICloud(db, root, portableRoot); r.missing -= r.in_icloud; }
     storage.noteScanLimits(db, portableRoot, r.capped || r.too_deep
       ? { cap, found: r.found, too_deep: r.too_deep, capped: r.capped, at: now } : null);
     db.exec('commit');
   } catch (e) { db.exec('rollback'); throw e; }
   return r;
+}
+
+// Missing originals inside a Photos library that Photos says are safe in iCloud are
+// dematerialised, not missing. Re-decided every scan, so a photo later deleted in Photos
+// goes back to missing.
+function inICloud(db, root, portableRoot) {
+  const rows = db.prepare(`select id, rel_path from location where root = ? and state = 'missing'
+                           and asset_id is not null and rel_path like '%.photoslibrary/originals/%'`).all(portableRoot);
+  const libs = new Map(), set = db.prepare("update location set state = 'dematerialised' where id = ?");
+  let n = 0;
+  for (const r of rows) {
+    const [lib, inside] = r.rel_path.split('/originals/');
+    if (!libs.has(lib)) libs.set(lib, photos.cloudOriginals(path.join(root, fromPortable(lib))));
+    if (libs.get(lib).has(inside)) { set.run(r.id); n++; }
+  }
+  return n;
 }
 
 function search(db, q, limit = 10) {

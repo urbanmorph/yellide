@@ -176,6 +176,66 @@ const fresh = name => {
         `${t} was not rebuilt`);
   });
 
+  await check('a Photos original moved to iCloud is in iCloud, not missing', async () => {
+    // "Optimise Mac Storage" deletes local originals that are safe in iCloud. On a real
+    // library, 2,908 of them read as "no longer on disk", as if the photographs were gone.
+    // Photos itself says which are kept: listed, not trashed, held in iCloud.
+    const root = path.join(tmp, 'Pictures');
+    const lib = path.join(root, 'Photos Library.photoslibrary');
+    for (const f of ['A/kept.jpg', 'B/trashed.jpg', 'C/deleted.jpg']) put(lib, 'originals/' + f);
+    fs.mkdirSync(path.join(lib, 'database'));
+    const { DatabaseSync } = require('node:sqlite');
+    const p = new DatabaseSync(path.join(lib, 'database', 'Photos.sqlite'));
+    p.exec(`create table ZASSET(Z_PK integer primary key, ZDIRECTORY text, ZFILENAME text,
+                                ZTRASHEDSTATE integer, ZCLOUDLOCALSTATE integer)`);
+    p.exec(`insert into ZASSET values (1,'A','kept.jpg',0,1), (2,'B','trashed.jpg',1,1)`);
+    p.close();
+
+    const { db } = fresh('icloud');
+    core.scan(db, root, { writeMarker: false });
+    const id = db.prepare("select asset_id id from location where filename = 'kept.jpg'").get().id;
+    tools.writeAnnotations(db, [{ id, caption: 'a kingfisher on a wire' }]);
+    for (const f of ['A/kept.jpg', 'B/trashed.jpg', 'C/deleted.jpg']) fs.unlinkSync(path.join(lib, 'originals', f));
+    pause();
+    core.scan(db, root, { writeMarker: false });
+
+    const state = name => db.prepare('select state from location where filename = ?').get(name).state;
+    assert.strictEqual(state('kept.jpg'), 'dematerialised', 'an original safe in iCloud reads as gone');
+    assert.strictEqual(state('trashed.jpg'), 'missing', 'a trashed photo is not safe in iCloud');
+    assert.strictEqual(state('deleted.jpg'), 'missing', 'a photo Photos no longer lists is gone');
+    assert.ok(/kingfisher/.test(tools.getAsset(db, id).text), 'its description was lost');
+    assert.ok(/iCloud/.test(tools.reveal(db, id).text), `reveal: ${tools.reveal(db, id).text}`);
+    const text = tools.describeArchive(db).text;
+    assert.ok(/Missing\s+2 files/.test(text), `only the two really gone should count as missing:\n${text}`);
+    assert.ok(/1 (indexed )?(photo|file).*iCloud/i.test(text), `no word that one is safe in iCloud:\n${text}`);
+  });
+
+  await check('a shoot caption reaches its photos in iCloud, which never stand in for it', async () => {
+    const root = path.join(tmp, 'Pictures2');
+    const lib = path.join(root, 'Photos Library.photoslibrary');
+    put(lib, 'originals/D/here.jpg'); put(lib, 'originals/D/away.jpg');
+    fs.mkdirSync(path.join(lib, 'database'));
+    const { DatabaseSync } = require('node:sqlite');
+    const p = new DatabaseSync(path.join(lib, 'database', 'Photos.sqlite'));
+    p.exec(`create table ZASSET(Z_PK integer primary key, ZDIRECTORY text, ZFILENAME text,
+                                ZTRASHEDSTATE integer, ZCLOUDLOCALSTATE integer)`);
+    p.exec(`insert into ZASSET values (1,'D','here.jpg',0,1), (2,'D','away.jpg',0,1)`);
+    p.close();
+    const { db } = fresh('icloud-shoot');
+    core.scan(db, root, { writeMarker: false });
+    fs.unlinkSync(path.join(lib, 'originals/D/away.jpg'));
+    pause();
+    core.scan(db, root, { writeMarker: false });
+
+    const work = tools.getWork(db, {}).data;
+    assert.strictEqual(work.length, 1, `${work.length} shoots offered`);
+    assert.strictEqual(work[0].filename, 'here.jpg', 'an iCloud-only photo was offered to be looked at');
+    assert.strictEqual(work[0].cluster_size, 2, 'the iCloud photo is not counted in its shoot');
+    tools.writeAnnotations(db, [{ id: work[0].id, caption: 'monsoon clouds over the ghats', propagate: true }]);
+    assert.strictEqual(db.prepare("select count(*) n from search where search match 'ghats'").get().n, 2,
+      'the caption did not reach the photo in iCloud');
+  });
+
   fs.rmSync(tmp, { recursive: true, force: true });
   if (!process.exitCode) console.log(`\n  catalog: ${passed} checks pass`);
 })();
