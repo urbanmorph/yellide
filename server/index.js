@@ -289,7 +289,7 @@ const TOOLS = [
       'biggest shoots first. Use this to caption efficiently, a caption on a representative can be ' +
       'propagated to its whole shoot, so a dozen looks can label thousands of files.',
     inputSchema: { type: 'object', properties: {
-      kind: { type: 'string', enum: ['image','video','audio'] }, limit: { type: 'number' } } } },
+      kind: { type: 'string', enum: ['image','video'] }, limit: { type: 'number' } } } },
 
   { name: 'look', description:
       'Returns the actual images SO THAT YOU CAN SEE THEM. The user cannot, these do not render in their chat. To show THEM, call show_pictures. This is how content questions ' +

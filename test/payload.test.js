@@ -111,6 +111,18 @@ check('it tells the model to keep going rather than stopping to report', () => {
     'nothing tells the model to loop, so each round costs the user another prompt');
 });
 
+check('get_work does not call audio finished when it was never looked at', () => {
+  // Audio has no picture, so no shoot of it is ever offered for describing. Asking for audio
+  // work used to answer "every shoot already has a description", a clean report of work
+  // nobody did.
+  db.prepare(`insert into asset(id, content_key, kind, size) values(?,?,?,?)`)
+    .run(500, 'k500', 'audio', 1000);
+  const text = tools.getWork(db, { kind: 'audio' }).text;
+  assert.ok(!/already has a description/i.test(text), `claimed audio is done: "${text}"`);
+  assert.ok(/audio/i.test(text) && /cannot|can't|not yet/i.test(text),
+    `does not say audio cannot be described yet: "${text}"`);
+});
+
 vision.thumbnail = realThumb;
 db.close(); clean(dbPath); fs.rmSync(dir, { recursive: true, force: true });
 if (!process.exitCode) console.log(`\n  payload: ${passed} checks pass`);

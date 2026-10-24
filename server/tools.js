@@ -422,6 +422,10 @@ function allShoots(db, kind) {
 }
 
 function getWork(db, opts = {}) {
+  // Only pictures can be looked at. Audio waits for transcripts, and must not read as done.
+  if (opts.kind === 'audio') return { text: 'Audio cannot be described yet: there is no picture to ' +
+    'look at, and transcripts are not built. Search still finds it by filename, folder, and any title ' +
+    'or artist written inside the file.', data: [] };
   const limit = Math.min(opts.limit || 12, 40);
   const shoots = allShoots(db, opts.kind)
     .filter(g => !g.done)

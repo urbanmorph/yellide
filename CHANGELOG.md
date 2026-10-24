@@ -4,12 +4,21 @@ All notable changes to Yellide. Newest first, following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
-This file is canonical. `site/changelog.html` is generated from it by
-`scripts/build-changelog.py`, so edit here and never there.
+This file is the release record.
 
 A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the old code
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
+
+## [0.9.24] 2026-10-24
+
+### Fixed
+
+- **Asking for audio to describe said it was all done.** `get_work` offered `audio` as a
+  kind, but only pictures can be looked at, so it answered "every shoot already has a
+  description" for audio nobody had ever described. It now says audio cannot be described
+  yet, and that search still finds it by filename, folder and any title or artist inside the
+  file. `audio` is no longer offered as a choice.
 
 ## [0.9.23] 2026-08-12
 

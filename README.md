@@ -69,12 +69,14 @@ server/           the whole product, no dependencies
   discover.js     density-ranked media discovery; needs no path
   tools.js        the tools' implementations
   worker.js       scanning off the stdio thread
+  photos.js       album names from the macOS Photos library, read-only
+  contribute.js   the six aggregate counts, and the only network call
 test/             node test/exif.test.js
 scripts/
   pack.sh         build the .mcpb; refuses to build without a version bump
-  build-changelog.py   generates site/changelog.html from CHANGELOG.md
-site/             five hand-written static pages on Cloudflare Pages
-CHANGELOG.md      canonical version history
+site/             hand-written static pages on Cloudflare Pages
+edge/             the Cloudflare Worker that receives those counts
+CHANGELOG.md      version history
 ```
 
 ## Development
@@ -88,7 +90,7 @@ bash scripts/pack.sh                  # build the bundle
 `pack.sh` refuses to build if the version in `manifest.json` is unchanged, because a
 sideloaded bundle never auto-updates and Claude Desktop keeps running the old code. You
 will otherwise spend an afternoon debugging a bug you already fixed. It also copies the
-bundle into `site/`, stamps the version into every page, and regenerates the changelog.
+bundle into `site/` and stamps the version into every page.
 
 **A sideloaded extension does not reload.** To test a change: uninstall, install the new
 bundle, quit Claude Desktop with Cmd-Q, reopen.
@@ -115,9 +117,6 @@ bundle, quit Claude Desktop with Cmd-Q, reopen.
 Design documents, plans and research go in `supporting-docs/`, and local agent instructions
 in `CLAUDE.md`, both gitignored. This keeps exploratory writing and working notes out of
 the diff.
-
-`CHANGELOG.md` is canonical; `site/changelog.html` is generated from it by
-`scripts/build-changelog.py`. Edit the markdown, never the HTML.
 
 ## Contributing
 
