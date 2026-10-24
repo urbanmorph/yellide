@@ -57,6 +57,7 @@ function openCatalog() {
 
 // ---- scanning, off the main thread ----
 // A 10 TB scan cannot block a tool call. Start a job, return immediately, poll by id.
+// `listed` settles once every file found is searchable by name, or the worker stops.
 function startScan(roots, cap) {
   const d = db();
   const now = new Date().toISOString();
@@ -67,14 +68,20 @@ function startScan(roots, cap) {
   const w = new Worker(path.join(__dirname, 'worker.js'),
     { workerData: { jobId, roots, dbPath: storage.catalogPath(),
                     cap: cap || core.SCAN_CAP, writeMarker: !NO_DRIVE_MARKER } });
-  w.on('message', m => log('scan', jobId, JSON.stringify(m).slice(0, 200)));
+  let settle;
+  const listed = new Promise(ok => { settle = ok; });
+  w.on('message', m => { log('scan', jobId, JSON.stringify(m).slice(0, 200)); if (m.type === 'listed-all') settle(true); });
+  w.on('exit', () => settle(true));
   w.on('error', e => {
+    settle(false);
     try { d.prepare('update scan_job set state=?, error=?, finished_at=? where id=?')
            .run('failed', String(e.message), new Date().toISOString(), jobId); } catch {}
   });
   w.unref();                       // never hold the process open on a scan
-  return jobId;
+  return { jobId, listed };
 }
+
+const LISTING_WAIT_MS = 20000;
 
 // "index everything" and "what still needs a caption" were chores dressed up as commands.
 // The tool knows the index is empty; making the user say so is asking them to do its job.
@@ -90,19 +97,12 @@ function maybeAutoScan() {
     const last = d.prepare("select v from meta where k='last_scan_at'").get()?.v;
     const age = last ? Date.now() - Date.parse(last) : Infinity;
 
-    if (assets === 0) {
+    if (assets === 0 || age > T.AUTO_RESCAN_MS) {
       const roots = discover.discoverFast().locations.map(l => l.path);
       if (!roots.length) return null;
       const job = startScan(roots);
       stampScan(d);
-      return { started: job, reason: 'first-run', roots: roots.length };
-    }
-    if (age > T.AUTO_RESCAN_MS) {
-      const roots = discover.discoverFast().locations.map(l => l.path);
-      if (!roots.length) return null;
-      const job = startScan(roots);
-      stampScan(d);
-      return { started: job, reason: 'refresh', roots: roots.length };
+      return { started: job.jobId, listed: job.listed, reason: assets === 0 ? 'first-run' : 'refresh', roots: roots.length };
     }
   } catch (e) { log('auto-scan skipped:', e.message); }
   return null;
@@ -161,7 +161,7 @@ function probeScan(dir, limit) {
   // user answer the question the tool exists to answer.
   const roots = dir ? [dir] : discover.discoverFast().locations.map(l => l.path);
   if (!roots.length) return { error: 'No media found anywhere.' };
-  const jobId = startScan(roots, limit);
+  const { jobId } = startScan(roots, limit);
   return {
     started: true, job: jobId, locations: roots.length,
     scanning: roots.map(r => r.replace(os.homedir(), '~')),
@@ -399,13 +399,28 @@ function handle(req) {
       // Text-first: results are relayed to a person, so return prose, not nested JSON.
       const asText = r => (r && typeof r.text === 'string') ? r.text : JSON.stringify(r, null, 2);
       // Every question triggers whatever housekeeping is due, before answering.
-      const auto = ['describe_archive', 'search', 'get_work'].includes(n) ? maybeAutoScan() : null;
-      const autoNote = auto
-        ? (auto.reason === 'first-run'
-            ? `\n\nI had not looked at this machine yet, so I have just started indexing ${auto.roots} places in the background. `
-              + `Answers will fill in as it runs. Ask again in a moment.`
-            : `\n\n(Refreshing the index in the background, new files will appear shortly.)`)
-        : '';
+      const auto = 'auto' in req ? req.auto
+        : ['describe_archive', 'search', 'get_work'].includes(n) ? maybeAutoScan() : null;
+      // Listing every file takes seconds, so answer from what it found, not from the index as it
+      // was a moment ago: "Nothing indexed yet", or last month's totals. Long enough for a
+      // whole home folder; past that, answer anyway and say the scan is still going.
+      if (auto?.listed && !('auto' in req)) {
+        return Promise.race([auto.listed, new Promise(ok => setTimeout(ok, LISTING_WAIT_MS, false))])
+          .then(ready => handle({ ...req, auto: { ...auto, listed: null, ready } }))
+          .catch(e => log('handler error', e.stack));
+      }
+      const autoNote = !auto ? ''
+        : auto.ready
+          ? (auto.reason === 'first-run'
+              ? `\n\nI had not looked at this machine yet, so I have just indexed ${auto.roots} places. Everything above is `
+                + `searchable by name, folder and date already. Reading the files for camera, place and length `
+                + `continues in the background, so these figures will fill in further.`
+              : `\n\n(The index was just refreshed, so these counts include everything found now. Reading the new `
+                + `files for camera, place and length continues in the background.)`)
+          : (auto.reason === 'first-run'
+              ? `\n\nI had not looked at this machine yet, so I have just started indexing ${auto.roots} places in the background. `
+                + `Answers will fill in as it runs. Ask again in a moment.`
+              : `\n\n(Refreshing the index in the background, new files will appear shortly.)`);
       if (n === 'describe_archive') {
         out = asText(T.describeArchive(db())) + autoNote;
         // Asked once, ever, and only when there is a finished index worth counting.

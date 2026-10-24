@@ -36,6 +36,8 @@ try {
       parentPort?.postMessage({ type: 'listed', root, files: l.files.length, new: l.listed });
     } catch (e) { perRoot.push({ root, error: e.code || e.message }); }
   }
+  // Everything is searchable by name now; a question waiting on the scan can be answered.
+  parentPort?.postMessage({ type: 'listed-all', files: found });
   for (const root of roots) {
     if (!listed.has(root)) continue;
     const t0 = Date.now();

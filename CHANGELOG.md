@@ -10,6 +10,16 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.31] 2026-10-24
+
+### Fixed
+
+- **The first question after a while was answered from the old index.** Asking "what media
+  do I have?" started a scan and then replied with the totals from before it, last month's,
+  or "Nothing indexed yet" on a new machine, and said to ask again. Listing every file takes
+  seconds (3.5 on a 60,000-file archive), so the answer now waits for it, up to 20 seconds,
+  and replies with what was just found. Reading the files continues in the background.
+
 ## [0.9.30] 2026-10-24
 
 ### Fixed

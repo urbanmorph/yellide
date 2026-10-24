@@ -403,6 +403,27 @@ function photosLibrary(root, rows) {
       'a live scan in another process was cancelled');
   });
 
+  await check('asking about your media when nothing is indexed answers with what was just found', async () => {
+    // The scan starts on the first question, and the answer used to be read from the index
+    // as it was a moment before: "Nothing indexed yet", or last month's totals. Listing takes
+    // seconds, so the answer waits for it.
+    const home = path.join(tmp, 'firstask');
+    put(path.join(home, 'Pictures'), 'Goa/beach.jpg');
+    const rpc = [
+      { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18',
+        capabilities: {}, clientInfo: { name: 't', version: '0' } } },
+      { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'describe_archive', arguments: {} } },
+    ].map(m => JSON.stringify(m)).join('\n') + '\n';
+    const run = spawnSync(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
+      input: rpc, timeout: 30000, encoding: 'utf8',
+      env: { ...process.env, HOME: home, YELLIDE_HOME: path.join(home, 'data'),
+             YELLIDE_COUNTER: 'http://127.0.0.1:9', YELLIDE_NO_DRIVE_MARKER: '1' } });
+    const reply = run.stdout.split('\n').map(l => { try { return JSON.parse(l); } catch { return null; } })
+      .find(m => m && m.id === 2);
+    const text = reply?.result?.content?.[0]?.text || run.stderr.slice(-300);
+    assert.ok(/^1 files/m.test(text), text);
+  });
+
   await check('diagnostics says when the last scan was, and that an old index refreshes on asking', async () => {
     // After an upgrade the report showed the new version beside the old counts, with nothing
     // to say a fresh scan had not run yet and would start the moment anyone asked.
