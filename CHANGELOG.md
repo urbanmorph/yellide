@@ -10,6 +10,16 @@ A sideloaded `.mcpb` **never auto-updates** and Claude Desktop keeps running the
 until you uninstall, reinstall and restart. That is why the version is on the website and
 why this file exists.
 
+## [0.9.25] 2026-10-24
+
+### Fixed
+
+- **The install page said the download was about 45 KB; it is 74.** The build now writes the
+  real size in, the way it already writes the version.
+- **The tool count included a prompt argument**, so local build notes said 18 tools while
+  there were 17. Counts now come from the manifest, and a new test holds the manifest to the
+  tools the server actually serves.
+
 ## [0.9.24] 2026-10-24
 
 ### Fixed

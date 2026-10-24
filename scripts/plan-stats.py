@@ -24,12 +24,15 @@ START, END = '<!-- stats:start -->', '<!-- stats:end -->'
 if not PLAN.exists():
     sys.exit('supporting-docs/plan.md not found (it is gitignored and local only)')
 
-version = json.loads((ROOT / 'manifest.json').read_text())['version']
+manifest = json.loads((ROOT / 'manifest.json').read_text())
+version = manifest['version']
 server = sorted((ROOT / 'server').glob('*.js'))
 lines = sum(len(f.read_text().splitlines()) for f in server)
 
 index_js = (ROOT / 'server' / 'index.js').read_text()
-tools = len(re.findall(r"name: '([a-z_]+)',\s*\n?\s*description:", index_js))
+# test/manifest.test.js holds the manifest to what the server serves. A regex over index.js
+# also matched the `what` argument of the `find` prompt.
+tools = len(manifest['tools'])
 prompts = len(re.findall(r"\{ name: '([a-z]+)',\s*\n\s*title:", index_js))
 
 pages = sorted(p.name for p in (ROOT / 'site').glob('*.html') if p.name != '404.html')

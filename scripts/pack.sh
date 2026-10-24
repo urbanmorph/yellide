@@ -50,11 +50,11 @@ echo "built $OUT  v$VERSION  ($(du -h "$OUT" | cut -f1))"
 # The site is the ONLY channel by which anyone learns a new version exists, so it must
 # never lag the bundle. It did once: the site said 0.9.5 while 0.9.6 was shipping.
 cp "$OUT" site/yellide.mcpb
-python3 - "$VERSION" <<'PY'
-import pathlib, re, sys
+python3 - "$VERSION" "$OUT" <<'PY'
+import json, math, pathlib, re, sys
 version = sys.argv[1]
-idx = pathlib.Path('server/index.js').read_text()
-tools = str(len(re.findall(r"name: '([a-z_]+)',\s*\n?\s*description:", idx)))
+tools = str(len(json.loads(pathlib.Path('manifest.json').read_text())['tools']))
+kb = str(math.ceil(pathlib.Path(sys.argv[2]).stat().st_size / 1024))
 loc = '{:,}'.format(sum(len(f.read_text().splitlines()) for f in pathlib.Path('server').glob('*.js')))
 changed = []
 for f in pathlib.Path('site').glob('*.html'):
@@ -62,6 +62,7 @@ for f in pathlib.Path('site').glob('*.html'):
     new = re.sub(r'(<b class="ver">)[^<]*(</b>)', r'\g<1>' + version + r'\g<2>', s)
     new = re.sub(r'(<b class="tools">)[^<]*(</b>)', r'\g<1>' + tools + r'\g<2>', new)
     new = re.sub(r'(<b class="loc">)[^<]*(</b>)', r'\g<1>' + loc + r'\g<2>', new)
+    new = re.sub(r'(<b class="kb">)[^<]*(</b>)', r'\g<1>' + kb + r'\g<2>', new)
     new = re.sub(r'(version\s{2,})\d+\.\d+\.\d+', r'\g<1>' + version, new)
     # every mention of the filename, not just the download attribute. The prose beside
     # it drifted once. changelog.html is exempt: its old version numbers are history.
